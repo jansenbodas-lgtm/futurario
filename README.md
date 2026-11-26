@@ -14,9 +14,7 @@ Landing page da **Futura Rio Corretora de Planos de Saúde e Odontológico** (co
 
 Já está configurado no `wrangler.toml`: a página em `public/`, a API em `worker.js` e os leads no KV `futura-rio-leads` (binding `LEADS`). Cada push no `main` faz o deploy automaticamente.
 
-Única configuração manual, em **Workers & Pages → futurario → Settings → Variables and Secrets** (tipo *Secret*):
-- `ADMIN_PASSWORD`: senha do painel
-- `SESSION_SECRET`: texto aleatório longo
+**Senha do painel:** enquanto nenhuma senha for cadastrada, o `/admin` usa a senha provisória **`admin`**. Para trocar, em **Workers & Pages → futurario → Settings → Variables and Secrets**, adicione o Secret `ADMIN_PASSWORD` com a nova senha e clique em Deploy. A chave de sessão é gerada automaticamente e guardada no KV (opcionalmente, defina o Secret `SESSION_SECRET`).
 
 Painel: `https://SEU-DOMINIO/admin`.
 

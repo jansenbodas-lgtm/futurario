@@ -19,7 +19,7 @@ const crypto = require('node:crypto');
 loadDotEnv(path.join(__dirname, '.env'));
 
 const PORT = Number(process.env.PORT) || 3000;
-const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || '';
+const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || 'admin'; // provisório: defina ADMIN_PASSWORD para trocar
 const SESSION_SECRET = process.env.SESSION_SECRET || crypto.randomBytes(32).toString('hex');
 const DATA_DIR = path.resolve(process.env.DATA_DIR || path.join(__dirname, 'data'));
 const COOKIE_SECURE = process.env.COOKIE_SECURE === 'true';
@@ -31,7 +31,7 @@ const SESSION_TTL_MS = 1000 * 60 * 60 * 12; // 12h
 const STATUSES = ['novo', 'em_contato', 'cotacao_enviada', 'negociando', 'fechado', 'perdido'];
 
 if (!ADMIN_PASSWORD) {
-  console.warn('[aviso] ADMIN_PASSWORD não definido: o painel /admin ficará bloqueado até você definir uma senha no .env');
+  console.warn('[aviso] ADMIN_PASSWORD não definido: usando a senha provisória "admin". Troque no .env!');
 }
 if (!process.env.SESSION_SECRET) {
   console.warn('[aviso] SESSION_SECRET não definido: sessões do painel expiram a cada reinício do servidor');

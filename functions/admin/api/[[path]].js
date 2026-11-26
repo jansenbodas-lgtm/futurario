@@ -1,7 +1,7 @@
 // /admin/api/* — API do CRM (Cloudflare Pages Function)
 import {
   json, clean, readJSON, STATUSES, SESSION_TTL_S, safeEqual, createSession, isAuthed,
-  sessionCookie, listLeads, findLeadKey, toCSV, rateLimited,
+  sessionCookie, listLeads, findLeadKey, toCSV, rateLimited, adminPassword,
 } from '../../../lib/cf.js';
 
 export async function onRequest({ request, env, params }) {
@@ -15,12 +15,9 @@ export async function onRequest({ request, env, params }) {
     if (ip && (await rateLimited(env, `login:${ip}`, 10, 900))) {
       return json({ ok: false, error: 'Muitas tentativas. Aguarde 15 minutos.' }, 429);
     }
-    if (!env.ADMIN_PASSWORD || !env.SESSION_SECRET) {
-      return json({ ok: false, error: 'Defina ADMIN_PASSWORD e SESSION_SECRET no Cloudflare.' }, 503);
-    }
     let body;
     try { body = await readJSON(request); } catch (_) { return json({ ok: false }, 400); }
-    if (!(await safeEqual(body.senha || '', env.ADMIN_PASSWORD))) {
+    if (!(await safeEqual(body.senha || '', adminPassword(env)))) {
       return json({ ok: false, error: 'Senha incorreta.' }, 401);
     }
     return json({ ok: true }, 200, { 'Set-Cookie': sessionCookie(await createSession(env), SESSION_TTL_S) });
