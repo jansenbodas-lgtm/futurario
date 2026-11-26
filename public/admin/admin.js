@@ -126,7 +126,7 @@
       if (tipo && tipoOf(l) !== tipo) return false;
       if (since && new Date(l.criadoEm).getTime() < since) return false;
       if (q) {
-        var hay = [l.nome, l.telefone, l.email, l.utm_source, l.utm_campaign, l.tipoPlano, l.origem, l.notas, l.interesse, l.negociacao, l.operadora, l.produto].join(' ').toLowerCase();
+        var hay = [l.nome, (l.beneficiarios || []).map(function (b) { return b.nome; }).join(' '), l.telefone, l.email, l.utm_source, l.utm_campaign, l.tipoPlano, l.origem, l.notas, l.interesse, l.negociacao, l.operadora, l.produto].join(' ').toLowerCase();
         var hit = hay.indexOf(q) !== -1 || (qd.length >= 3 && String(l.telefone).replace(/\D/g, '').indexOf(qd) !== -1);
         if (!hit) return false;
       }
@@ -152,25 +152,7 @@
     return 'https://wa.me/' + d + '?text=' + encodeURIComponent(txt);
   }
   function renderBdays() {
-    var box = $('bday');
-    var list = state.leads.map(function (l) { return { l: l, b: bdayInfo(l.aniversario) }; })
-      .filter(function (x) { return x.b && x.b.days <= 7; })
-      .sort(function (a, b) { return a.b.days - b.b.days; });
-    box.hidden = !list.length;
-    box.textContent = '';
-    if (!list.length) return;
-    var hoje = list.filter(function (x) { return x.b.days === 0; }).length;
-    box.appendChild(el('p', { class: 'bday__title', text: '🎂 ' + (hoje ? hoje + ' aniversariante(s) hoje' + (list.length > hoje ? ' · ' + (list.length - hoje) + ' nos próximos 7 dias' : '') : list.length + ' aniversário(s) nos próximos 7 dias') }));
-    var ul = el('ul');
-    list.forEach(function (x) {
-      var who = el('button', { type: 'button', class: 'who', text: x.l.nome });
-      who.addEventListener('click', function () { openSheet(x.l, 'historico'); });
-      ul.appendChild(el('li', { class: x.b.days === 0 ? 'is-today' : '' }, [
-        who, el('span', { class: 'when', text: bdayWhen(x.b) + (x.b.age ? ' · ' + x.b.age + ' anos' : '') }),
-        el('a', { class: 'btn btn--wa', href: bdayWa(x.l), target: '_blank', rel: 'noopener', text: 'Parabéns no WhatsApp' })
-      ]));
-    });
-    box.appendChild(ul);
+    window.FRBenef.banner($('bday'), state.leads, function (l) { openSheet(l, 'historico'); });
   }
 
   function render() {
@@ -233,7 +215,12 @@
 
     var c = el('article', { class: 'card', draggable: 'true', 'data-id': l.id, style: colVar(l.status) }, [
       el('div', { class: 'card__top' }, [el('span', { class: 'card__who' }, [el('span', { class: 'ptype ptype--' + tipoOf(l), text: tipoOf(l) }), nameBtn]), el('span', { class: 'card__date', text: fmtShort(l.criadoEm) })]),
-      (function () { var b = bdayInfo(l.aniversario); return b && b.days <= 7 ? el('div', { class: 'card__bday', text: '🎂 Aniversário ' + bdayWhen(b) }) : null; })(),
+      (function () {
+        var up = window.FRBenef.upcoming(l, 7).sort(function (a, b) { return a.b.days - b.b.days; });
+        if (!up.length) return null;
+        var x = up[0], who = x.pessoa.titular ? '' : ' de ' + String(x.pessoa.nome || '').split(' ')[0];
+        return el('div', { class: 'card__bday', text: '🎂 Aniversário' + who + ' ' + bdayWhen(x.b) + (up.length > 1 ? ' (+' + (up.length - 1) + ')' : '') });
+      })(),
       el('div', { class: 'card__line' }, [el('a', { href: waLink(l.telefone, l.nome), target: '_blank', rel: 'noopener', text: '📱 ' + l.telefone })]),
       l.tipoPlano ? el('div', { class: 'card__line', text: '🩺 ' + l.tipoPlano + (l.vidas ? ' · ' + l.vidas + ' vida(s)' : '') }) : null,
       el('div', null, originTags(l)),
@@ -397,6 +384,7 @@
     $('d-tel').value = l.telefone || '';
     $('d-email').value = l.email || '';
     $('d-aniv').value = l.aniversario || '';
+    state.benefEd = window.FRBenef.editor($('d-benef'), l.beneficiarios || []);
     updateAnivHint();
     $('d-tipo').value = tipoOf(l);
     $('d-interesse').value = l.interesse || '';
@@ -421,6 +409,7 @@
       operadora: 'd-operadora', produto: 'd-produto', valorMensal: 'd-valor', vigencia: 'd-vigencia' };
     var patch = {};
     Object.keys(map).forEach(function (k) { var v = $(map[k]).value; var cur = k === 'tipoPessoa' ? (l.tipoPessoa || '') : (l[k] || ''); if (v !== cur) patch[k] = v; });
+    if (state.benefEd) { var nb = state.benefEd.get(); if (JSON.stringify(nb) !== JSON.stringify(l.beneficiarios || [])) patch.beneficiarios = nb; }
     var h = $('d-hist').value.trim();
     if (h) patch.addHistorico = h;
     return patch;

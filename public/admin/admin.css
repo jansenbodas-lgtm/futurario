@@ -170,3 +170,16 @@ td textarea { width: 220px; min-height: 54px; resize: vertical; font-size: .85re
 .bday .btn { padding: 5px 10px; font-size: .8rem; }
 .card__bday { font-size: .78rem; font-weight: 700; color: var(--accent-ink); }
 @media (max-width: 700px) { .row3 { grid-template-columns: 1fr; } }
+
+/* Beneficiários */
+.benef { border-top: 1px dashed var(--line); padding-top: 10px; display: grid; gap: 8px; }
+.benef__head { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; }
+.benef__head strong { color: var(--brand); font-size: .88rem; }
+.benef__count { color: var(--muted); font-size: .8rem; }
+.benef__rows { display: grid; gap: 6px; }
+.benef__row { display: grid; grid-template-columns: 1.5fr 1fr 1fr auto; gap: 6px; align-items: center; }
+.benef__row input, .benef__row select { padding: 8px 9px; font-size: .86rem; min-width: 0; }
+.benef__rm { border: 0; background: var(--bg); color: var(--muted); width: 32px; height: 32px; border-radius: 8px; font-size: 1.2rem; cursor: pointer; }
+.benef__rm:hover { color: var(--danger); background: #FDECEC; }
+.benef__add { justify-self: start; padding: 7px 12px; font-size: .84rem; }
+@media (max-width: 700px) { .benef__row { grid-template-columns: 1fr 1fr; } .benef__row input:first-child { grid-column: 1 / -1; } }

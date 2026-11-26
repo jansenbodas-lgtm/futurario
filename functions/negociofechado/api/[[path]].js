@@ -1,7 +1,7 @@
 // /negociofechado/api/* — CRM de contratos fechados e comissões
 import {
   json, clean, readJSON, SESSION_TTL_S, safeEqual, createSession, isAuthed, sessionCookie, rateLimited,
-  finPassword, listContracts, getRules, sanitizeRules, parseBRL, OPERADORAS,
+  finPassword, listContracts, getRules, sanitizeRules, parseBRL, OPERADORAS, sanitizeBenef,
 } from '../../../lib/cf.js';
 
 const MONTH_RE = /^\d{4}-\d{2}$/;
@@ -22,6 +22,7 @@ function applyContractPatch(c, body) {
     if (v && !DATE_RE.test(v)) return 'Data de aniversário inválida.';
     c.aniversario = v;
   }
+  if (body.beneficiarios !== undefined) c.beneficiarios = sanitizeBenef(body.beneficiarios);
   if (body.status !== undefined) c.status = body.status === 'cancelado' ? 'cancelado' : 'ativo';
   if (body.canceladoEm !== undefined) {
     const v = clean(body.canceladoEm, 10);
