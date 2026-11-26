@@ -13,6 +13,7 @@
   var LABEL = {};
   STAGES.forEach(function (s) { LABEL[s.id] = s.label; });
   var LEGACY = { novo: 'primeiro_contato', em_contato: 'primeiro_contato', perdido: 'sem_contato' };
+  function tipoOf(l) { return l.tipoPessoa || (/empresarial|pme|mei/i.test(l.tipoPlano || '') ? 'PJ' : 'PF'); }
   function norm(s) { return LEGACY[s] || (LABEL[s] ? s : 'primeiro_contato'); }
 
   var state = { leads: [], view: 'pipeline', current: null };
@@ -116,11 +117,13 @@
     var q = $('q').value.trim().toLowerCase();
     var qd = q.replace(/\D/g, '');
     var st = ignoreStatus ? '' : $('f-status').value;
+    var tipo = $('f-tipo').value;
     var days = Number($('f-periodo').value);
     var since = 0;
     if (days) { var s = new Date(); s.setHours(0, 0, 0, 0); since = s.getTime() - (days - 1) * 86400000; }
     return state.leads.filter(function (l) {
       if (st && l.status !== st) return false;
+      if (tipo && tipoOf(l) !== tipo) return false;
       if (since && new Date(l.criadoEm).getTime() < since) return false;
       if (q) {
         var hay = [l.nome, l.telefone, l.email, l.utm_source, l.utm_campaign, l.tipoPlano, l.origem, l.notas, l.interesse, l.negociacao, l.operadora, l.produto].join(' ').toLowerCase();
@@ -189,7 +192,7 @@
     nameBtn.addEventListener('click', function () { openSheet(l); });
 
     var c = el('article', { class: 'card', draggable: 'true', 'data-id': l.id, style: colVar(l.status) }, [
-      el('div', { class: 'card__top' }, [nameBtn, el('span', { class: 'card__date', text: fmtShort(l.criadoEm) })]),
+      el('div', { class: 'card__top' }, [el('span', { class: 'card__who' }, [el('span', { class: 'ptype ptype--' + tipoOf(l), text: tipoOf(l) }), nameBtn]), el('span', { class: 'card__date', text: fmtShort(l.criadoEm) })]),
       el('div', { class: 'card__line' }, [el('a', { href: waLink(l.telefone, l.nome), target: '_blank', rel: 'noopener', text: '📱 ' + l.telefone })]),
       l.tipoPlano ? el('div', { class: 'card__line', text: '🩺 ' + l.tipoPlano + (l.vidas ? ' · ' + l.vidas + ' vida(s)' : '') }) : null,
       el('div', null, originTags(l)),
@@ -231,7 +234,7 @@
     api('/leads/' + lead.id, { method: 'PATCH', body: JSON.stringify({ status: status }) }).then(function (r) {
       if (!r.ok) { lead.status = prev; render(); return toast(r.error || 'Erro ao salvar'); }
       Object.assign(lead, r.lead, { status: norm(r.lead.status) });
-      toast('Movido para "' + LABEL[status] + '"');
+      toast(status === 'fechado' ? 'Negócio fechado! Copiado para o Negócio Fechado 💰' : 'Movido para "' + LABEL[status] + '"');
     });
   }
 
@@ -342,6 +345,7 @@
     var sel = $('d-status');
     sel.textContent = '';
     STAGES.forEach(function (s) { var o = el('option', { value: s.id, text: s.label }); if (s.id === l.status) o.selected = true; sel.appendChild(o); });
+    $('d-tipo').value = tipoOf(l);
     $('d-interesse').value = l.interesse || '';
     $('d-negociacao').value = l.negociacao || '';
     $('d-notas').value = l.notas || '';
@@ -360,10 +364,10 @@
   function closeSheet() { if (typeof dlg.close === 'function') dlg.close(); else dlg.removeAttribute('open'); }
 
   function collectPatch(l) {
-    var map = { status: 'd-status', interesse: 'd-interesse', negociacao: 'd-negociacao', notas: 'd-notas',
+    var map = { tipoPessoa: 'd-tipo', status: 'd-status', interesse: 'd-interesse', negociacao: 'd-negociacao', notas: 'd-notas',
       operadora: 'd-operadora', produto: 'd-produto', valorMensal: 'd-valor', vigencia: 'd-vigencia' };
     var patch = {};
-    Object.keys(map).forEach(function (k) { var v = $(map[k]).value; if (v !== (l[k] || '')) patch[k] = v; });
+    Object.keys(map).forEach(function (k) { var v = $(map[k]).value; var cur = k === 'tipoPessoa' ? (l.tipoPessoa || '') : (l[k] || ''); if (v !== cur) patch[k] = v; });
     var h = $('d-hist').value.trim();
     if (h) patch.addHistorico = h;
     return patch;
@@ -389,7 +393,7 @@
     if (!l) return;
     var patch = collectPatch(l);
     if (!Object.keys(patch).length) { closeSheet(); return; }
-    sendPatch(l, patch, function () { closeSheet(); render(); toast('Lead atualizado'); });
+    sendPatch(l, patch, function () { closeSheet(); render(); toast(patch.status === 'fechado' ? 'Negócio fechado! Copiado para o Negócio Fechado 💰' : 'Lead atualizado'); });
   });
   $('d-del').addEventListener('click', function () { if (state.current) removeLead(state.current, closeSheet); });
   dlg.addEventListener('click', function (e) { if (e.target === dlg) closeSheet(); });
@@ -408,6 +412,7 @@
     if (d.length <= 10) return '(' + d.slice(0, 2) + ') ' + d.slice(2, 6) + '-' + d.slice(6);
     return '(' + d.slice(0, 2) + ') ' + d.slice(2, 7) + '-' + d.slice(7);
   }
+  nform.elements.tipoPlano.addEventListener('change', function (e) { nform.elements.tipoPessoa.value = /empresarial|pme|mei/i.test(e.target.value) ? 'PJ' : 'PF'; });
   nform.elements.telefone.addEventListener('input', function (e) { e.target.value = maskPhone(e.target.value); });
   $('new-lead').addEventListener('click', function () {
     nform.reset();
@@ -423,7 +428,7 @@
     var f = nform.elements;
     var payload = {
       nome: f.nome.value.trim(), telefone: f.telefone.value.trim(), email: f.email.value.trim(),
-      fonte: f.fonte.value, status: f.status.value, tipoPlano: f.tipoPlano.value, vidas: f.vidas.value, notas: f.notas.value
+      fonte: f.fonte.value, status: f.status.value, tipoPessoa: f.tipoPessoa.value, tipoPlano: f.tipoPlano.value, vidas: f.vidas.value, notas: f.notas.value
     };
     if (payload.nome.length < 2) { $('n-err').textContent = 'Informe o nome.'; return; }
     if (payload.telefone.replace(/\D/g, '').length < 10) { $('n-err').textContent = 'Informe o telefone com DDD.'; return; }
@@ -449,7 +454,7 @@
       render();
     });
   });
-  ['q', 'f-status', 'f-periodo'].forEach(function (id) { $(id).addEventListener('input', render); });
+  ['q', 'f-status', 'f-periodo', 'f-tipo'].forEach(function (id) { $(id).addEventListener('input', render); });
 
   // Atualiza sozinho a cada 60s (sem atrapalhar quem está editando)
   setInterval(function () {

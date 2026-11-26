@@ -1,0 +1,164 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex, nofollow">
+  <title>Negócio Fechado · Futura Rio</title>
+  <link rel="icon" href="/img/favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="/admin/admin.css?v=2026-11-26d">
+  <link rel="stylesheet" href="/negociofechado/fin.css?v=2026-11-26d">
+</head>
+<body>
+
+<!-- LOGIN -->
+<section id="login" class="login" hidden>
+  <form class="login__card" id="login-form">
+    <img src="/img/logo-futura-rio-2026.webp" alt="Futura Rio" width="240" height="80" class="login__logo">
+    <h1>Negócio Fechado</h1>
+    <p>Acompanhamento de contratos e comissões.</p>
+    <label>Senha<input type="password" name="senha" autocomplete="current-password" required autofocus></label>
+    <p class="err" id="login-err" role="alert"></p>
+    <button class="btn btn--primary" type="submit">Entrar</button>
+  </form>
+</section>
+
+<div id="app" hidden>
+  <header class="bar">
+    <div class="bar__brand"><img src="/img/logo-futura-rio-2026.webp" alt="Futura Rio" width="120" height="40"><strong>Negócio Fechado</strong></div>
+    <div class="bar__actions">
+      <button class="btn btn--accent" id="new-contract" type="button">+ Contrato</button>
+      <button class="btn btn--ghost" id="open-rules" type="button">Regras de comissão</button>
+      <button class="btn btn--ghost" id="export" type="button">Exportar CSV</button>
+      <button class="btn btn--ghost" id="logout" type="button">Sair</button>
+    </div>
+  </header>
+
+  <main class="main">
+    <ul class="kpis" id="kpis"></ul>
+
+    <div class="filters">
+      <input type="search" id="q" placeholder="Buscar cliente, operadora ou produto...">
+      <select id="f-tipo" aria-label="Tipo de cliente">
+        <option value="">PF e PJ</option>
+        <option value="PJ">Somente PJ</option>
+        <option value="PF">Somente PF</option>
+      </select>
+      <select id="f-op" aria-label="Operadora"><option value="">Todas as operadoras</option></select>
+      <select id="f-status" aria-label="Situação">
+        <option value="ativo">Contratos ativos</option>
+        <option value="">Ativos e cancelados</option>
+        <option value="cancelado">Somente cancelados</option>
+      </select>
+      <select id="f-from" aria-label="A partir de">
+        <option value="0">A partir deste mês</option>
+        <option value="-3">Incluir 3 meses anteriores</option>
+        <option value="-6">Incluir 6 meses anteriores</option>
+      </select>
+      <select id="f-horizon" aria-label="Horizonte">
+        <option value="12">12 meses</option>
+        <option value="6">6 meses</option>
+        <option value="24">24 meses</option>
+      </select>
+    </div>
+
+    <section class="panel">
+      <div class="panel__head">
+        <div>
+          <h2>Previsão de comissões por mês</h2>
+          <p class="muted">Parcelas iniciais (agenciamento) e vitalício previstos para cada mês, conforme as regras de comissão.</p>
+        </div>
+        <ul class="legend" aria-label="Legenda">
+          <li><span class="sw sw--p"></span>Parcelas iniciais</li>
+          <li><span class="sw sw--v"></span>Vitalício</li>
+        </ul>
+      </div>
+      <div class="chart" id="chart" role="img" aria-label="Gráfico de barras com a previsão de comissões por mês"></div>
+      <div class="tip" id="tip" hidden></div>
+    </section>
+
+    <div class="warn" id="warn" hidden></div>
+
+    <section class="panel panel--flush">
+      <div class="table-wrap fin-wrap">
+        <table class="fin" id="fin-table"></table>
+      </div>
+      <p class="empty" id="empty" hidden>Nenhum contrato ainda. Quando um lead for para “Negócio fechado” no CRM, ele aparece aqui automaticamente, ou cadastre em “+ Contrato”.</p>
+    </section>
+    <p class="muted small-note">Clique em um valor para marcar a comissão daquele mês como <strong>recebida</strong> (✓). A parcela 1 é prevista no mês da vigência. No vitalício, os pagamentos param no mês do cancelamento.</p>
+  </main>
+</div>
+
+<!-- CONTRATO -->
+<dialog id="c-dialog" class="sheet sheet--wide" aria-labelledby="c-title">
+  <form class="sheet__body" id="c-form" novalidate>
+    <button type="button" class="sheet__close js-close" aria-label="Fechar">×</button>
+    <h2 id="c-title">Contrato</h2>
+    <p class="sheet__date" id="c-sub"></p>
+    <div class="row2">
+      <label>Cliente *<input name="nome" required></label>
+      <label>Telefone<input name="telefone" type="tel" inputmode="tel"></label>
+    </div>
+    <div class="row2">
+      <label>Tipo<select name="tipoPessoa"><option value="PJ">PJ (empresa / MEI)</option><option value="PF">PF (pessoa física)</option></select></label>
+      <label>Operadora<select name="operadora" id="c-op"></select></label>
+    </div>
+    <div class="row2">
+      <label>Produto / plano<input name="produto" placeholder="Ex.: Amil S450 QC Nacional"></label>
+      <label>Vidas<input name="vidas" placeholder="Ex.: 4"></label>
+    </div>
+    <div class="row2">
+      <label>Valor mensal do contrato (R$) *<input name="valor" inputmode="decimal" placeholder="Ex.: 1.890,00"></label>
+      <label>Data de vigência *<input name="vigencia" type="date"></label>
+    </div>
+    <div class="row2">
+      <label>Situação<select name="status"><option value="ativo">Ativo</option><option value="cancelado">Cancelado</option></select></label>
+      <label>Data de cancelamento<input name="canceladoEm" type="date"></label>
+    </div>
+    <label>Observações<textarea name="notas" rows="2"></textarea></label>
+    <div class="preview" id="c-preview"></div>
+    <p class="err" id="c-err" role="alert"></p>
+    <div class="sheet__actions">
+      <button type="button" class="btn btn--danger" id="c-del">Excluir</button>
+      <button type="submit" class="btn btn--primary btn--auto">Salvar</button>
+    </div>
+  </form>
+</dialog>
+
+<!-- RECEBIMENTO -->
+<dialog id="p-dialog" class="sheet" aria-labelledby="p-title">
+  <form class="sheet__body" id="p-form" novalidate>
+    <button type="button" class="sheet__close js-close" aria-label="Fechar">×</button>
+    <h2 id="p-title">Recebimento</h2>
+    <p class="sheet__date" id="p-sub"></p>
+    <label>Valor recebido (R$)<input name="valor" inputmode="decimal" placeholder="Deixe em branco para usar o valor previsto"></label>
+    <div class="sheet__actions">
+      <button type="button" class="btn btn--danger" id="p-undo">Desmarcar</button>
+      <button type="submit" class="btn btn--primary btn--auto">Marcar como recebido</button>
+    </div>
+  </form>
+</dialog>
+
+<!-- REGRAS -->
+<dialog id="r-dialog" class="sheet sheet--wide" aria-labelledby="r-title">
+  <form class="sheet__body" id="r-form" novalidate>
+    <button type="button" class="sheet__close js-close" aria-label="Fechar">×</button>
+    <h2 id="r-title">Regras de comissão</h2>
+    <p class="sheet__date">Parcelas: % do valor mensal recebido em cada mês, a partir da vigência, separados por ponto e vírgula. Ex.: 300% em 3 meses = <code>100; 100; 100</code>. Vitalício: % mensal depois das parcelas, enquanto o contrato estiver ativo.</p>
+    <div class="tabs" role="tablist">
+      <button type="button" class="tabs__btn is-active" data-rt="PJ">Pessoa jurídica (PJ)</button>
+      <button type="button" class="tabs__btn" data-rt="PF">Pessoa física (PF)</button>
+    </div>
+    <table class="rules"><thead><tr><th>Operadora</th><th>Parcelas (%)</th><th>Vitalício (%)</th></tr></thead><tbody id="r-body"></tbody></table>
+    <p class="err" id="r-err" role="alert"></p>
+    <div class="sheet__actions">
+      <button type="button" class="btn btn--ghost js-close">Cancelar</button>
+      <button type="submit" class="btn btn--primary btn--auto">Salvar regras</button>
+    </div>
+  </form>
+</dialog>
+
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+<script src="/negociofechado/fin.js?v=2026-11-26d" defer></script>
+</body>
+</html>

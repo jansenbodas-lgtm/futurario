@@ -1,7 +1,7 @@
 // /admin/api/* — API do CRM (Cloudflare Pages Function)
 import {
   json, clean, readJSON, STATUSES, SESSION_TTL_S, safeEqual, createSession, isAuthed,
-  sessionCookie, listLeads, findLeadKey, toCSV, rateLimited, adminPassword, normalizeStatus, leadKey, applyLeadPatch,
+  sessionCookie, listLeads, findLeadKey, toCSV, rateLimited, adminPassword, normalizeStatus, leadKey, applyLeadPatch, upsertContractFromLead, inferTipoPessoa,
 } from '../../../lib/cf.js';
 
 export async function onRequest({ request, env, params }) {
@@ -20,14 +20,14 @@ export async function onRequest({ request, env, params }) {
     if (!(await safeEqual(body.senha || '', adminPassword(env)))) {
       return json({ ok: false, error: 'Senha incorreta.' }, 401);
     }
-    return json({ ok: true }, 200, { 'Set-Cookie': sessionCookie(await createSession(env), SESSION_TTL_S) });
+    return json({ ok: true }, 200, { 'Set-Cookie': sessionCookie(await createSession(env, 'crm'), SESSION_TTL_S, 'crm') });
   }
 
   if (route === '/logout' && method === 'POST') {
-    return json({ ok: true }, 200, { 'Set-Cookie': sessionCookie('', 0) });
+    return json({ ok: true }, 200, { 'Set-Cookie': sessionCookie('', 0, 'crm') });
   }
 
-  if (!(await isAuthed(request, env))) return json({ ok: false, error: 'Não autenticado.' }, 401);
+  if (!(await isAuthed(request, env, 'crm'))) return json({ ok: false, error: 'Não autenticado.' }, 401);
 
   if (route === '/leads' && method === 'POST') {
     let body;
@@ -43,6 +43,7 @@ export async function onRequest({ request, env, params }) {
       id: crypto.randomUUID(), criadoEm: now, atualizadoEm: now,
       nome, telefone, email,
       tipoPlano: clean(body.tipoPlano, 60), vidas: clean(body.vidas, 20),
+      tipoPessoa: ['PF', 'PJ'].includes(body.tipoPessoa) ? body.tipoPessoa : inferTipoPessoa(body.tipoPlano),
       origem: 'manual', utm_source: clean(body.fonte, 60),
       utm_medium: '', utm_campaign: '', utm_term: '', utm_content: '', gclid: '', fbclid: '',
       pagina: '', referrer: '', ip: '', cidade: '',
@@ -50,6 +51,9 @@ export async function onRequest({ request, env, params }) {
       notas: clean(body.notas, 2000),
       historico: [{ em: now, tipo: 'criado', texto: `Lead cadastrado manualmente (${clean(body.fonte, 60) || 'manual'})` }],
     };
+    if (lead.status === 'fechado' && (await upsertContractFromLead(env, lead)) === 'criado') {
+      lead.historico.push({ em: now, tipo: 'contrato', texto: 'Copiado para o Negócio Fechado (acompanhamento de comissões)' });
+    }
     await env.LEADS.put(leadKey(lead), JSON.stringify(lead));
     return json({ ok: true, lead }, 201);
   }
@@ -81,6 +85,10 @@ export async function onRequest({ request, env, params }) {
       lead.status = normalizeStatus(lead.status);
       const err = applyLeadPatch(lead, body);
       if (err) return json({ ok: false, error: err }, 422);
+      if (lead.status === 'fechado') {
+        const r = await upsertContractFromLead(env, lead);
+        if (r === 'criado') lead.historico.push({ em: lead.atualizadoEm, tipo: 'contrato', texto: 'Copiado para o Negócio Fechado (acompanhamento de comissões)' });
+      }
       await env.LEADS.put(key, JSON.stringify(lead));
       return json({ ok: true, lead });
     }

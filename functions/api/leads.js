@@ -1,5 +1,5 @@
 // POST /api/leads — captura de lead (Cloudflare Pages Function)
-import { json, clean, readJSON, leadKey, rateLimited } from '../../lib/cf.js';
+import { json, clean, readJSON, leadKey, rateLimited, inferTipoPessoa } from '../../lib/cf.js';
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
 
@@ -37,6 +37,7 @@ export async function onRequestPost({ request, env }) {
     email,
     tipoPlano: clean(body.tipoPlano, 60),
     vidas: clean(body.vidas, 20),
+    tipoPessoa: inferTipoPessoa(body.tipoPlano),
     origem: clean(body.origem, 40) || 'site',
     utm_source: clean(utm.utm_source, 100),
     utm_medium: clean(utm.utm_medium, 100),

@@ -4,6 +4,7 @@
  */
 import { onRequestPost as createLead } from './functions/api/leads.js';
 import { onRequest as adminApi } from './functions/admin/api/[[path]].js';
+import { onRequest as finApi } from './functions/negociofechado/api/[[path]].js';
 import { json } from './lib/cf.js';
 
 export default {
@@ -19,6 +20,11 @@ export default {
     if (p.startsWith('/admin/api/')) {
       const path = p.slice('/admin/api/'.length).split('/').filter(Boolean);
       return adminApi({ request, env, ctx, params: { path } });
+    }
+
+    if (p.startsWith('/negociofechado/api/')) {
+      const path = p.slice('/negociofechado/api/'.length).split('/').filter(Boolean);
+      return finApi({ request, env, ctx, params: { path } });
     }
 
     if (p.startsWith('/api/')) return json({ ok: false, error: 'Rota não encontrada.' }, 404);

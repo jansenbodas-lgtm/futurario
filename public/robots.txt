@@ -1,6 +1,7 @@
 User-agent: *
 Allow: /
 Disallow: /admin/
+Disallow: /negociofechado/
 Disallow: /api/
 
 Sitemap: https://planosdesaude.futurariocorretora.com.br/sitemap.xml

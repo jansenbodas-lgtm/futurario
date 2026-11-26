@@ -8,7 +8,7 @@ compatibility_date = "2026-11-01"
 directory = "./public"
 binding = "ASSETS"
 not_found_handling = "404-page"
-run_worker_first = ["/api/*", "/admin/api/*"]
+run_worker_first = ["/api/*", "/admin/api/*", "/negociofechado/api/*"]
 
 # Armazenamento dos leads do CRM
 [[kv_namespaces]]

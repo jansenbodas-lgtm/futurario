@@ -149,3 +149,9 @@ td textarea { width: 220px; min-height: 54px; resize: vertical; font-size: .85re
 .card__deal { font-size: .8rem; color: #157A3C; background: #E4F8EA; border-radius: 8px; padding: 5px 8px; font-weight: 600; }
 .card__deal.is-soon { color: var(--accent-ink); background: #FFEDE3; }
 @media (max-width: 700px) { .hist-add { grid-template-columns: 1fr; } }
+
+/* PF / PJ */
+.card__who { display: flex; align-items: baseline; gap: 6px; min-width: 0; }
+.ptype { flex: none; font-size: .66rem; font-weight: 800; padding: 1px 6px; border-radius: 6px; position: relative; top: -1px; }
+.ptype--PJ { background: #E8F1FF; color: #1A4E8F; }
+.ptype--PF { background: #FFEDE3; color: var(--accent-ink); }

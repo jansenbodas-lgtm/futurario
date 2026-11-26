@@ -8,7 +8,7 @@ Landing page da **Futura Rio Corretora de Planos de Saúde e Odontológico** (co
 - Origem de cada lead registrada: `utm_source`, `utm_campaign`, `gclid` (Google Ads) e `fbclid` (Meta Ads). Assim você sabe qual campanha gerou cada contato.
 - SEO: title e description otimizados, dados estruturados (InsuranceAgency, Person, FAQPage), seção de perguntas frequentes, seção de bairros atendidos, `robots.txt` e `sitemap.xml`.
 - Evento **Lead** disparado no Meta Pixel e no Google Ads/GA4 quando os códigos estiverem instalados.
-- Roda no **Cloudflare** (Worker + KV) ou em servidor Node.js **sem dependências** (VPS, Render, Railway, Docker).
+- Roda no **Cloudflare** (Worker + KV).
 
 ## Publicar no Cloudflare (Worker "futurario")
 
@@ -24,21 +24,17 @@ Teste local com o simulador do Cloudflare:
 npx wrangler dev --var ADMIN_PASSWORD:teste --var SESSION_SECRET:abc
 ```
 
-## Rodar em servidor Node (VPS, Render, Railway, Docker)
 
-```bash
-cp .env.example .env     # defina ADMIN_PASSWORD e SESSION_SECRET
-npm start                # http://localhost:3000   painel: http://localhost:3000/admin
-```
+## Negócio Fechado (`/negociofechado`)
 
-Com Docker:
+Quando um lead vai para **Negócio fechado** no CRM, uma cópia dele é criada automaticamente em `/negociofechado` (senha provisória **`admin1`**; para trocar, cadastre o Secret `FIN_PASSWORD` no Cloudflare). Lá ficam:
 
-```bash
-docker build -t futura-rio .
-docker run -d -p 3000:3000 -e ADMIN_PASSWORD='sua-senha' -e SESSION_SECRET='texto-longo' -e COOKIE_SECURE=true -v futura-data:/data futura-rio
-```
+- previsão de comissões mês a mês (gráfico e tabela por contrato), separando **parcelas iniciais** e **vitalício**;
+- controle de recebimento: clique no valor do mês para marcar como recebido;
+- filtros por PF/PJ, operadora e situação; contratos cancelados param de gerar vitalício no mês do cancelamento;
+- **Regras de comissão** editáveis por operadora, separadas em PJ e PF (parcelas em % do valor mensal + % de vitalício).
 
-Os leads ficam em `DATA_DIR/leads.json`. Use uma pasta/volume **persistente** e faça backup (ou exporte o CSV pelo painel).
+Regras PJ iniciais: Amil, SulAmérica, Bradesco e Porto 100/100/100 + 2% vitalício; Klini 100/100/100 + 4%; Assim 100/100/100 + 5%; Leve 100/50/25/25; MedSênior 100/50/50.
 
 ## Checklist antes de ligar o tráfego
 
@@ -54,7 +50,5 @@ Os leads ficam em `DATA_DIR/leads.json`. Use uma pasta/volume **persistente** e 
 | Domínio definitivo | `canonical`, `og:*`, JSON-LD, `robots.txt` e `sitemap.xml` (`planosdesaude.futurariocorretora.com.br`) |
 
 | Meta Pixel / Google Ads / GA4 | bloco comentado no `<head>` do `public/index.html` |
-| Senha do painel | `.env`, `ADMIN_PASSWORD` |
-| HTTPS ativo | `COOKIE_SECURE=true` |
 
 Depois de publicar, cadastre o site no **Google Search Console**, envie o `sitemap.xml` e coloque o link do site nas duas fichas do Google (Futura Rio e Carla Jansen).

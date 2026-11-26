@@ -2,11 +2,11 @@
   "name": "futura-rio-landing",
   "version": "1.0.0",
   "private": true,
-  "description": "Landing page da Futura Rio Corretora (Carla Jansen) com captura de leads e mini CRM em /admin",
-  "main": "server.js",
+  "description": "Landing page da Futura Rio Corretora (Carla Jansen) com CRM de vendas (/admin) e Negócio Fechado (/negociofechado) no Cloudflare Workers",
   "scripts": {
-    "start": "node server.js",
-    "build": "echo \"Site estatico em public/ - nada para compilar\""
+    "dev": "npx wrangler dev",
+    "build": "echo \"Site estatico em public/ - nada para compilar\"",
+    "deploy": "npx wrangler deploy"
   },
   "engines": {
     "node": ">=18"

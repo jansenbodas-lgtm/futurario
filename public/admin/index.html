@@ -6,7 +6,7 @@
   <meta name="robots" content="noindex, nofollow">
   <title>CRM Futura Rio</title>
   <link rel="icon" href="/img/favicon.svg" type="image/svg+xml">
-  <link rel="stylesheet" href="/admin/admin.css?v=2026-11-26c">
+  <link rel="stylesheet" href="/admin/admin.css?v=2026-11-26d">
 </head>
 <body>
 
@@ -32,6 +32,7 @@
     </div>
     <div class="bar__actions">
       <button class="btn btn--accent" id="new-lead" type="button">+ Novo lead</button>
+      <a class="btn btn--ghost" href="/negociofechado/" target="_blank" rel="noopener">💰 Negócio Fechado</a>
       <a class="btn btn--ghost" href="/admin/api/leads.csv">Exportar CSV</a>
       <button class="btn btn--ghost" id="refresh" type="button">Atualizar</button>
       <button class="btn btn--ghost" id="logout" type="button">Sair</button>
@@ -43,6 +44,11 @@
 
     <div class="filters">
       <input type="search" id="q" placeholder="Buscar por nome, telefone, e-mail ou campanha...">
+      <select id="f-tipo" aria-label="Tipo de cliente">
+        <option value="">PF e PJ</option>
+        <option value="PJ">Somente PJ</option>
+        <option value="PF">Somente PF</option>
+      </select>
       <select id="f-periodo" aria-label="Período">
         <option value="">Todo o período</option>
         <option value="1">Hoje</option>
@@ -89,7 +95,10 @@
     </div>
 
     <section class="tab" data-pane="negociacao">
-      <label>Etapa do pipeline<select id="d-status"></select></label>
+      <div class="row2">
+        <label>Etapa do pipeline<select id="d-status"></select></label>
+        <label>Tipo de cliente<select id="d-tipo"><option value="PJ">PJ (empresa / MEI)</option><option value="PF">PF (pessoa física)</option></select></label>
+      </div>
       <label>O que o cliente quer
         <textarea id="d-interesse" rows="3" placeholder="Ex.: plano familiar para 4 vidas, quer manter o Hospital Barra D'Or, orçamento até R$ 2.000"></textarea>
       </label>
@@ -167,6 +176,10 @@
       <label>Etapa<select name="status" id="n-status"></select></label>
     </div>
     <div class="row2">
+      <label>Tipo de cliente<select name="tipoPessoa"><option value="PF">PF (pessoa física)</option><option value="PJ">PJ (empresa / MEI)</option></select></label>
+      <span></span>
+    </div>
+    <div class="row2">
       <label>Tipo de plano
         <select name="tipoPlano">
           <option value="">Selecione</option>
@@ -196,6 +209,6 @@
 
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
-<script src="/admin/admin.js?v=2026-11-26c" defer></script>
+<script src="/admin/admin.js?v=2026-11-26d" defer></script>
 </body>
 </html>
