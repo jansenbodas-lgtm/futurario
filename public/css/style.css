@@ -80,9 +80,9 @@ button { font: inherit; cursor: pointer; }
   border-bottom: 1px solid var(--line);
   border-top: 4px solid var(--accent);
 }
-.topbar__inner { display: flex; align-items: center; gap: 24px; height: 72px; }
+.topbar__inner { display: flex; align-items: center; gap: 24px; height: 80px; }
 .brand { display: flex; align-items: center; gap: 10px; text-decoration: none; color: var(--brand); }
-.brand__logo { height: 52px; width: auto; border-radius: 8px; }
+.brand__logo { height: 58px; width: auto; max-width: none; border-radius: 8px; display: block; }
 .brand__logo--footer { height: 76px; border-radius: 0; }
 .brand__text { display: flex; flex-direction: column; line-height: 1.1; }
 .brand__text strong { font-size: 1.15rem; font-weight: 800; }
@@ -434,12 +434,12 @@ section { padding: 80px 0; }
   .pillars--grid { grid-template-columns: 1fr; }
 }
 @media (max-width: 560px) {
-  .topbar__inner { height: 64px; gap: 12px; }
+  .topbar__inner { height: 68px; gap: 12px; }
   .topbar .btn span { display: none; }
   .topbar .btn { padding: .65em; }
   .logos li { flex-basis: calc((100% - 14px) / 2); }
   .cards { grid-template-columns: 1fr; }
-  .brand__logo { height: 42px; }
+  .brand__logo { height: 48px; }
   .hero__cta .btn { width: 100%; }
   .row2 { grid-template-columns: 1fr; }
   .lead-form { padding: 22px; }
