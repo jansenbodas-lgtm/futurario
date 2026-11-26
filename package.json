@@ -5,7 +5,8 @@
   "description": "Landing page da Futura Rio Corretora (Carla Jansen) com captura de leads e mini CRM em /admin",
   "main": "server.js",
   "scripts": {
-    "start": "node server.js"
+    "start": "node server.js",
+    "build": "echo \"Site estatico em public/ - nada para compilar\""
   },
   "engines": {
     "node": ">=18"
