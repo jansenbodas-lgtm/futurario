@@ -1,7 +1,7 @@
 // /admin/api/* — API do CRM (Cloudflare Pages Function)
 import {
   json, clean, readJSON, STATUSES, SESSION_TTL_S, safeEqual, createSession, isAuthed,
-  sessionCookie, listLeads, findLeadKey, toCSV, rateLimited, adminPassword, normalizeStatus, leadKey,
+  sessionCookie, listLeads, findLeadKey, toCSV, rateLimited, adminPassword, normalizeStatus, leadKey, applyLeadPatch,
 } from '../../../lib/cf.js';
 
 export async function onRequest({ request, env, params }) {
@@ -48,6 +48,7 @@ export async function onRequest({ request, env, params }) {
       pagina: '', referrer: '', ip: '', cidade: '',
       status: STATUSES.includes(body.status) ? body.status : 'primeiro_contato',
       notas: clean(body.notas, 2000),
+      historico: [{ em: now, tipo: 'criado', texto: `Lead cadastrado manualmente (${clean(body.fonte, 60) || 'manual'})` }],
     };
     await env.LEADS.put(leadKey(lead), JSON.stringify(lead));
     return json({ ok: true, lead }, 201);
@@ -78,12 +79,8 @@ export async function onRequest({ request, env, params }) {
       try { body = await readJSON(request); } catch (_) { return json({ ok: false }, 400); }
       const lead = await env.LEADS.get(key, 'json');
       lead.status = normalizeStatus(lead.status);
-      if (body.status !== undefined) {
-        if (!STATUSES.includes(body.status)) return json({ ok: false, error: 'Status inválido.' }, 422);
-        lead.status = body.status;
-      }
-      if (body.notas !== undefined) lead.notas = clean(body.notas, 2000);
-      lead.atualizadoEm = new Date().toISOString();
+      const err = applyLeadPatch(lead, body);
+      if (err) return json({ ok: false, error: err }, 422);
       await env.LEADS.put(key, JSON.stringify(lead));
       return json({ ok: true, lead });
     }

@@ -30,6 +30,52 @@ const SESSION_TTL_MS = 1000 * 60 * 60 * 12; // 12h
 
 const STATUSES = ['primeiro_contato', 'cotacao_enviada', 'negociando', 'aguardando_vigencia', 'fechado', 'sem_contato'];
 const LEGACY_STATUS = { novo: 'primeiro_contato', em_contato: 'primeiro_contato', perdido: 'sem_contato' };
+const STAGE_LABEL = {
+  primeiro_contato: 'Primeiro contato', cotacao_enviada: 'Cotação enviada', negociando: 'Negociando',
+  aguardando_vigencia: 'Aguardando vigência', fechado: 'Negócio fechado', sem_contato: 'Não consigo mais contato',
+};
+const DEAL_FIELDS = { interesse: 1000, negociacao: 1500, operadora: 80, produto: 160, valorMensal: 30 };
+const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
+function brDate(iso) { const [y, m, d] = iso.split('-'); return `${d}/${m}/${y}`; }
+
+/** Aplica alterações vindas do painel e registra o histórico automaticamente. Retorna mensagem de erro ou null. */
+function applyLeadPatch(lead, body) {
+  const now = new Date().toISOString();
+  if (!Array.isArray(lead.historico)) lead.historico = [];
+  const push = (tipo, texto) => lead.historico.push({ em: now, tipo, texto: clean(texto, 2000) });
+
+  if (body.status !== undefined) {
+    if (!STATUSES.includes(body.status)) return 'Etapa inválida.';
+    if (body.status !== lead.status) {
+      push('etapa', `Etapa: ${STAGE_LABEL[lead.status] || lead.status} → ${STAGE_LABEL[body.status]}`);
+      lead.status = body.status;
+    }
+  }
+  if (body.notas !== undefined) lead.notas = clean(body.notas, 2000);
+
+  const before = `${lead.operadora || ''}|${lead.produto || ''}|${lead.vigencia || ''}|${lead.valorMensal || ''}`;
+  for (const [k, max] of Object.entries(DEAL_FIELDS)) {
+    if (body[k] !== undefined) lead[k] = clean(body[k], max);
+  }
+  if (body.vigencia !== undefined) {
+    const v = clean(body.vigencia, 10);
+    if (v && !DATE_RE.test(v)) return 'Data de vigência inválida.';
+    lead.vigencia = v;
+  }
+  const after = `${lead.operadora || ''}|${lead.produto || ''}|${lead.vigencia || ''}|${lead.valorMensal || ''}`;
+  if (before !== after && (lead.operadora || lead.produto || lead.vigencia)) {
+    const parts = [];
+    if (lead.operadora) parts.push(lead.operadora);
+    if (lead.produto) parts.push(lead.produto);
+    if (lead.valorMensal) parts.push(`R$ ${lead.valorMensal}/mês`);
+    if (lead.vigencia) parts.push(`vigência ${brDate(lead.vigencia)}`);
+    push('contrato', `Contratação: ${parts.join(' · ')}`);
+  }
+  if (typeof body.addHistorico === 'string' && body.addHistorico.trim()) push('nota', body.addHistorico.trim());
+  if (lead.historico.length > 300) lead.historico = lead.historico.slice(-300);
+  lead.atualizadoEm = now;
+  return null;
+}
 const normalizeStatus = (s) => LEGACY_STATUS[s] || (STATUSES.includes(s) ? s : 'primeiro_contato');
 
 if (!ADMIN_PASSWORD) {
@@ -271,6 +317,7 @@ async function handleCreateLead(req, res) {
     notas: '',
     ip,
     atualizadoEm: new Date().toISOString(),
+    historico: [{ em: new Date().toISOString(), tipo: 'criado', texto: `Lead recebido pelo site (${clean(body.origem, 40) || 'site'}${utm.utm_source ? ' · ' + clean(utm.utm_source, 60) : ''})` }],
   };
   leads.unshift(lead);
   await persist();
@@ -282,7 +329,7 @@ async function handleCreateLead(req, res) {
 /* API do painel                                                       */
 /* ------------------------------------------------------------------ */
 function toCSV(rows) {
-  const cols = ['criadoEm', 'atualizadoEm', 'nome', 'telefone', 'email', 'tipoPlano', 'vidas', 'status', 'notas', 'origem',
+  const cols = ['criadoEm', 'atualizadoEm', 'nome', 'telefone', 'email', 'tipoPlano', 'vidas', 'status', 'interesse', 'negociacao', 'operadora', 'produto', 'valorMensal', 'vigencia', 'notas', 'origem',
     'utm_source', 'utm_medium', 'utm_campaign', 'utm_term', 'utm_content', 'gclid', 'fbclid', 'pagina', 'referrer'];
   const esc = (v) => {
     let s = String(v ?? '');
@@ -334,6 +381,7 @@ async function handleAdminApi(req, res, url) {
       pagina: '', referrer: '', ip: '',
       status: STATUSES.includes(body.status) ? body.status : 'primeiro_contato',
       notas: clean(body.notas, 2000),
+      historico: [{ em: now, tipo: 'criado', texto: `Lead cadastrado manualmente (${clean(body.fonte, 60) || 'manual'})` }],
     };
     leads.unshift(lead);
     await persist();
@@ -361,12 +409,8 @@ async function handleAdminApi(req, res, url) {
     if (req.method === 'PATCH') {
       let body;
       try { body = await readJSON(req); } catch (_) { return sendJSON(res, 400, { ok: false }); }
-      if (body.status !== undefined) {
-        if (!STATUSES.includes(body.status)) return sendJSON(res, 422, { ok: false, error: 'Status inválido.' });
-        lead.status = body.status;
-      }
-      if (body.notas !== undefined) lead.notas = clean(body.notas, 2000);
-      lead.atualizadoEm = new Date().toISOString();
+      const err = applyLeadPatch(lead, body);
+      if (err) return sendJSON(res, 422, { ok: false, error: err });
       await persist();
       return sendJSON(res, 200, { ok: true, lead });
     }

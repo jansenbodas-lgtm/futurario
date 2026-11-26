@@ -6,7 +6,7 @@
   <meta name="robots" content="noindex, nofollow">
   <title>CRM Futura Rio</title>
   <link rel="icon" href="/img/favicon.svg" type="image/svg+xml">
-  <link rel="stylesheet" href="/admin/admin.css?v=2026-11-26b">
+  <link rel="stylesheet" href="/admin/admin.css?v=2026-11-26c">
 </head>
 <body>
 
@@ -71,18 +71,67 @@
 </div>
 
 <!-- FICHA DO LEAD -->
-<dialog id="lead-dialog" class="sheet" aria-labelledby="d-nome">
+<dialog id="lead-dialog" class="sheet sheet--wide" aria-labelledby="d-nome">
   <form method="dialog" class="sheet__body" id="lead-form">
     <button class="sheet__close" value="cancel" aria-label="Fechar">×</button>
     <p class="sheet__date" id="d-data"></p>
     <h2 id="d-nome"></h2>
     <div class="sheet__contact">
-      <a id="d-wa" class="btn btn--wa" target="_blank" rel="noopener">📱 Chamar no WhatsApp</a>
+      <a id="d-wa" class="btn btn--wa" target="_blank" rel="noopener">📱 WhatsApp</a>
       <a id="d-mail" class="btn btn--ghost">✉️ E-mail</a>
     </div>
-    <dl class="sheet__info" id="d-info"></dl>
-    <label>Etapa do pipeline<select id="d-status"></select></label>
-    <label>Anotações<textarea id="d-notas" rows="5" placeholder="Ex.: enviei cotação Amil e SulAmérica, retornar sexta..."></textarea></label>
+
+    <div class="tabs" role="tablist">
+      <button type="button" class="tabs__btn is-active" data-tab="negociacao">Negociação</button>
+      <button type="button" class="tabs__btn" data-tab="contratacao">Contratação</button>
+      <button type="button" class="tabs__btn" data-tab="historico">Histórico <span class="tabs__count" id="d-hcount"></span></button>
+      <button type="button" class="tabs__btn" data-tab="dados">Dados</button>
+    </div>
+
+    <section class="tab" data-pane="negociacao">
+      <label>Etapa do pipeline<select id="d-status"></select></label>
+      <label>O que o cliente quer
+        <textarea id="d-interesse" rows="3" placeholder="Ex.: plano familiar para 4 vidas, quer manter o Hospital Barra D'Or, orçamento até R$ 2.000"></textarea>
+      </label>
+      <label>O que está negociando
+        <textarea id="d-negociacao" rows="3" placeholder="Ex.: Amil S380 x SulAmérica Direto x Bradesco Nacional Flex; aguardando aprovação do marido"></textarea>
+      </label>
+      <label>Observações rápidas (aparecem no cartão)
+        <textarea id="d-notas" rows="2" placeholder="Ex.: retornar sexta às 10h"></textarea>
+      </label>
+    </section>
+
+    <section class="tab" data-pane="contratacao" hidden>
+      <div class="row2">
+        <label>Operadora contratada
+          <select id="d-operadora">
+            <option value="">—</option>
+            <option>Amil</option><option>Porto Seguro Saúde</option><option>SulAmérica</option><option>Bradesco Saúde</option>
+            <option>MedSênior</option><option>Prevent Senior</option><option>Leve Saúde</option><option>Assim Saúde</option>
+            <option>Klini Saúde</option><option>Outra</option>
+          </select>
+        </label>
+        <label>Produto / plano contratado<input id="d-produto" placeholder="Ex.: Amil S450 QC Nacional"></label>
+      </div>
+      <div class="row2">
+        <label>Valor mensal (R$)<input id="d-valor" inputmode="decimal" placeholder="Ex.: 1.850,00"></label>
+        <label>Data de vigência<input id="d-vigencia" type="date"></label>
+      </div>
+      <p class="hint" id="d-vig-hint"></p>
+    </section>
+
+    <section class="tab" data-pane="historico" hidden>
+      <div class="hist-add">
+        <textarea id="d-hist" rows="2" placeholder="Registrar no histórico: ligação, cotação enviada, retorno do cliente..."></textarea>
+        <button type="button" class="btn btn--accent" id="d-hist-add">Adicionar</button>
+      </div>
+      <ol class="timeline" id="d-timeline"></ol>
+    </section>
+
+    <section class="tab" data-pane="dados" hidden>
+      <dl class="sheet__info" id="d-info"></dl>
+    </section>
+
     <div class="sheet__actions">
       <button type="button" class="btn btn--danger" id="d-del">Excluir lead</button>
       <button type="button" class="btn btn--primary btn--auto" id="d-save">Salvar</button>
@@ -147,6 +196,6 @@
 
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
-<script src="/admin/admin.js?v=2026-11-26b" defer></script>
+<script src="/admin/admin.js?v=2026-11-26c" defer></script>
 </body>
 </html>

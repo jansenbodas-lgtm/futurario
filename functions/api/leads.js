@@ -52,6 +52,7 @@ export async function onRequestPost({ request, env }) {
     ip,
     cidade: clean(request.cf && request.cf.city, 80),
     atualizadoEm: now,
+    historico: [{ em: now, tipo: 'criado', texto: `Lead recebido pelo site (${clean(body.origem, 40) || 'site'}${utm.utm_source ? ' · ' + clean(utm.utm_source, 60) : ''})` }],
   };
 
   await env.LEADS.put(leadKey(lead), JSON.stringify(lead));

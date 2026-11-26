@@ -123,7 +123,7 @@
       if (st && l.status !== st) return false;
       if (since && new Date(l.criadoEm).getTime() < since) return false;
       if (q) {
-        var hay = [l.nome, l.telefone, l.email, l.utm_source, l.utm_campaign, l.tipoPlano, l.origem, l.notas].join(' ').toLowerCase();
+        var hay = [l.nome, l.telefone, l.email, l.utm_source, l.utm_campaign, l.tipoPlano, l.origem, l.notas, l.interesse, l.negociacao, l.operadora, l.produto].join(' ').toLowerCase();
         var hit = hay.indexOf(q) !== -1 || (qd.length >= 3 && String(l.telefone).replace(/\D/g, '').indexOf(qd) !== -1);
         if (!hit) return false;
       }
@@ -193,6 +193,8 @@
       el('div', { class: 'card__line' }, [el('a', { href: waLink(l.telefone, l.nome), target: '_blank', rel: 'noopener', text: '📱 ' + l.telefone })]),
       l.tipoPlano ? el('div', { class: 'card__line', text: '🩺 ' + l.tipoPlano + (l.vidas ? ' · ' + l.vidas + ' vida(s)' : '') }) : null,
       el('div', null, originTags(l)),
+      (l.operadora || l.vigencia) ? el('div', { class: 'card__deal' + (l.vigencia && daysUntil(l.vigencia) >= 0 && daysUntil(l.vigencia) <= 7 ? ' is-soon' : ''),
+        text: '✅ ' + [l.operadora, l.produto].filter(Boolean).join(' · ') + (l.vigencia ? (l.operadora ? ' — ' : '') + vigText(l.vigencia) : '') }) : null,
       l.notas ? el('div', { class: 'card__notes', text: l.notas }) : null,
       el('div', { class: 'card__foot' }, [
         move,
@@ -287,41 +289,107 @@
 
   /* ---------- ficha do lead ---------- */
   var dlg = $('lead-dialog');
+  function brDate(iso) { if (!iso) return ''; var p = iso.split('-'); return p[2] + '/' + p[1] + '/' + p[0]; }
+  function daysUntil(iso) { var d = new Date(iso + 'T00:00:00'); var t = new Date(); t.setHours(0, 0, 0, 0); return Math.round((d - t) / 86400000); }
+  function vigText(iso) {
+    if (!iso) return '';
+    var n = daysUntil(iso);
+    if (n > 1) return 'Vigência em ' + brDate(iso) + ' (faltam ' + n + ' dias)';
+    if (n === 1) return 'Vigência amanhã (' + brDate(iso) + ')';
+    if (n === 0) return 'Vigência começa hoje (' + brDate(iso) + ')';
+    return 'Vigente desde ' + brDate(iso);
+  }
+
+  function showTab(name) {
+    document.querySelectorAll('.tabs__btn').forEach(function (b) { b.classList.toggle('is-active', b.dataset.tab === name); });
+    document.querySelectorAll('.tab').forEach(function (p) { p.hidden = p.dataset.pane !== name; });
+  }
+  document.querySelectorAll('.tabs__btn').forEach(function (b) { b.addEventListener('click', function () { showTab(b.dataset.tab); }); });
+
+  function renderTimeline(l) {
+    var ol = $('d-timeline');
+    ol.textContent = '';
+    var h = (l.historico || []).slice().reverse();
+    $('d-hcount').textContent = h.length ? String(h.length) : '';
+    if (!h.length) { ol.appendChild(el('li', { class: 'empty', text: 'Nenhum registro ainda.' })); return; }
+    h.forEach(function (it) {
+      ol.appendChild(el('li', { class: 't-' + (it.tipo || 'nota') }, [el('time', { text: fmtDate(it.em) }), el('p', { text: it.texto })]));
+    });
+  }
+
+  function updateVigHint() {
+    var v = $('d-vigencia').value, hint = $('d-vig-hint');
+    hint.textContent = vigText(v);
+    hint.classList.toggle('is-soon', !!v && daysUntil(v) >= 0 && daysUntil(v) <= 7);
+  }
+  $('d-vigencia').addEventListener('input', updateVigHint);
+
   function openSheet(l) {
     state.current = l;
     $('d-nome').textContent = l.nome;
     $('d-data').textContent = 'Entrou em ' + fmtDate(l.criadoEm) + (l.atualizadoEm ? ' · atualizado em ' + fmtDate(l.atualizadoEm) : '');
     $('d-wa').href = waLink(l.telefone, l.nome);
     $('d-wa').textContent = '📱 ' + l.telefone;
-    $('d-mail').href = 'mailto:' + l.email;
-    $('d-mail').textContent = '✉️ ' + l.email;
+    $('d-mail').hidden = !l.email;
+    $('d-mail').href = 'mailto:' + (l.email || '');
+    $('d-mail').textContent = '✉️ ' + (l.email || '');
     var info = $('d-info');
     info.textContent = '';
-    [['Interesse', l.tipoPlano], ['Vidas', l.vidas], ['Origem', l.origem], ['Campanha', [l.utm_source, l.utm_medium, l.utm_campaign].filter(Boolean).join(' / ')],
-     ['Anúncio', l.gclid ? 'Google Ads' : (l.fbclid ? 'Meta Ads' : '')], ['Cidade', l.cidade], ['Página', l.pagina]]
+    [['Telefone', l.telefone], ['E-mail', l.email], ['Tipo de plano', l.tipoPlano], ['Vidas', l.vidas], ['Origem', l.origem],
+     ['Fonte / campanha', [l.utm_source, l.utm_medium, l.utm_campaign].filter(Boolean).join(' / ')],
+     ['Anúncio', l.gclid ? 'Google Ads' : (l.fbclid ? 'Meta Ads' : '')], ['Cidade', l.cidade], ['Página', l.pagina], ['Entrou em', fmtDate(l.criadoEm)]]
       .forEach(function (p) { if (p[1]) { info.appendChild(el('dt', { text: p[0] })); info.appendChild(el('dd', { text: p[1] })); } });
     var sel = $('d-status');
     sel.textContent = '';
     STAGES.forEach(function (s) { var o = el('option', { value: s.id, text: s.label }); if (s.id === l.status) o.selected = true; sel.appendChild(o); });
+    $('d-interesse').value = l.interesse || '';
+    $('d-negociacao').value = l.negociacao || '';
     $('d-notas').value = l.notas || '';
+    var op = $('d-operadora');
+    if (l.operadora && !Array.prototype.some.call(op.options, function (o) { return o.value === l.operadora; })) op.appendChild(el('option', { text: l.operadora }));
+    op.value = l.operadora || '';
+    $('d-produto').value = l.produto || '';
+    $('d-valor').value = l.valorMensal || '';
+    $('d-vigencia').value = l.vigencia || '';
+    $('d-hist').value = '';
+    updateVigHint();
+    renderTimeline(l);
+    showTab(['aguardando_vigencia', 'fechado'].indexOf(l.status) !== -1 ? 'contratacao' : 'negociacao');
     if (typeof dlg.showModal === 'function') dlg.showModal(); else dlg.setAttribute('open', '');
   }
   function closeSheet() { if (typeof dlg.close === 'function') dlg.close(); else dlg.removeAttribute('open'); }
 
+  function collectPatch(l) {
+    var map = { status: 'd-status', interesse: 'd-interesse', negociacao: 'd-negociacao', notas: 'd-notas',
+      operadora: 'd-operadora', produto: 'd-produto', valorMensal: 'd-valor', vigencia: 'd-vigencia' };
+    var patch = {};
+    Object.keys(map).forEach(function (k) { var v = $(map[k]).value; if (v !== (l[k] || '')) patch[k] = v; });
+    var h = $('d-hist').value.trim();
+    if (h) patch.addHistorico = h;
+    return patch;
+  }
+
+  function sendPatch(l, patch, done) {
+    api('/leads/' + l.id, { method: 'PATCH', body: JSON.stringify(patch) }).then(function (r) {
+      if (r._status === 401) { closeSheet(); showLogin(); return; }
+      if (!r.ok) return toast(r.error || 'Erro ao salvar');
+      Object.assign(l, r.lead, { status: norm(r.lead.status) });
+      if (done) done(r.lead);
+    });
+  }
+
+  $('d-hist-add').addEventListener('click', function () {
+    var l = state.current, txt = $('d-hist').value.trim();
+    if (!l || !txt) return;
+    sendPatch(l, { addHistorico: txt }, function () { $('d-hist').value = ''; renderTimeline(l); render(); toast('Registro adicionado ao histórico'); });
+  });
+
   $('d-save').addEventListener('click', function () {
     var l = state.current;
     if (!l) return;
-    var patch = {};
-    if ($('d-status').value !== l.status) patch.status = $('d-status').value;
-    if ($('d-notas').value !== (l.notas || '')) patch.notas = $('d-notas').value;
+    var patch = collectPatch(l);
     if (!Object.keys(patch).length) { closeSheet(); return; }
-    api('/leads/' + l.id, { method: 'PATCH', body: JSON.stringify(patch) }).then(function (r) {
-      if (!r.ok) return toast(r.error || 'Erro ao salvar');
-      Object.assign(l, r.lead, { status: norm(r.lead.status) });
-      closeSheet();
-      render();
-      toast('Lead atualizado');
-    });
+    sendPatch(l, patch, function () { closeSheet(); render(); toast('Lead atualizado'); });
   });
   $('d-del').addEventListener('click', function () { if (state.current) removeLead(state.current, closeSheet); });
   dlg.addEventListener('click', function (e) { if (e.target === dlg) closeSheet(); });
