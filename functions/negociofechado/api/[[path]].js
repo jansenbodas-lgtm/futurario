@@ -17,6 +17,11 @@ function applyContractPatch(c, body) {
     if (v && !DATE_RE.test(v)) return 'Data de vigência inválida.';
     c.vigencia = v;
   }
+  if (body.aniversario !== undefined) {
+    const v = clean(body.aniversario, 10);
+    if (v && !DATE_RE.test(v)) return 'Data de aniversário inválida.';
+    c.aniversario = v;
+  }
   if (body.status !== undefined) c.status = body.status === 'cancelado' ? 'cancelado' : 'ativo';
   if (body.canceladoEm !== undefined) {
     const v = clean(body.canceladoEm, 10);

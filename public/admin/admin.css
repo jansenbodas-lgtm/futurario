@@ -155,3 +155,18 @@ td textarea { width: 220px; min-height: 54px; resize: vertical; font-size: .85re
 .ptype { flex: none; font-size: .66rem; font-weight: 800; padding: 1px 6px; border-radius: 6px; position: relative; top: -1px; }
 .ptype--PJ { background: #E8F1FF; color: #1A4E8F; }
 .ptype--PF { background: #FFEDE3; color: var(--accent-ink); }
+
+/* Aniversários */
+.client { border: 1px solid var(--line); border-radius: 12px; padding: 10px 14px 12px; margin: 0; display: grid; gap: 8px; }
+.client legend { font-weight: 800; color: var(--brand); padding: 0 6px; font-size: .9rem; }
+.row3 { display: grid; grid-template-columns: 1fr 1.3fr 1fr; gap: 10px; }
+.bday { background: linear-gradient(90deg, #FFF1E8, #FFF8F2); border: 1px solid #FFD2B8; border-left: 5px solid var(--accent); border-radius: 14px; padding: 12px 16px; margin-bottom: 16px; display: grid; gap: 8px; }
+.bday__title { font-weight: 800; color: var(--accent-ink); margin: 0; }
+.bday ul { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 8px; }
+.bday li { background: #fff; border: 1px solid #FFD2B8; border-radius: 12px; padding: 6px 8px 6px 12px; display: flex; align-items: center; gap: 10px; font-size: .88rem; }
+.bday li.is-today { border-color: var(--accent); box-shadow: 0 4px 14px rgba(254, 110, 37, .2); }
+.bday .who { background: none; border: 0; padding: 0; font: inherit; font-weight: 800; color: var(--brand); cursor: pointer; }
+.bday .when { color: var(--muted); }
+.bday .btn { padding: 5px 10px; font-size: .8rem; }
+.card__bday { font-size: .78rem; font-weight: 700; color: var(--accent-ink); }
+@media (max-width: 700px) { .row3 { grid-template-columns: 1fr; } }

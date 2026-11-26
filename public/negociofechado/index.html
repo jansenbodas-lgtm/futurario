@@ -6,8 +6,8 @@
   <meta name="robots" content="noindex, nofollow">
   <title>Negócio Fechado · Futura Rio</title>
   <link rel="icon" href="/img/favicon.svg" type="image/svg+xml">
-  <link rel="stylesheet" href="/admin/admin.css?v=2026-11-26d">
-  <link rel="stylesheet" href="/negociofechado/fin.css?v=2026-11-26d">
+  <link rel="stylesheet" href="/admin/admin.css?v=2026-11-26e">
+  <link rel="stylesheet" href="/negociofechado/fin.css?v=2026-11-26e">
 </head>
 <body>
 
@@ -35,6 +35,7 @@
   </header>
 
   <main class="main">
+    <div class="bday" id="bday" hidden></div>
     <ul class="kpis" id="kpis"></ul>
 
     <div class="filters">
@@ -108,6 +109,10 @@
       <label>Vidas<input name="vidas" placeholder="Ex.: 4"></label>
     </div>
     <div class="row2">
+      <label>E-mail<input name="email" type="email"></label>
+      <label>Data de aniversário<input name="aniversario" type="date"></label>
+    </div>
+    <div class="row2">
       <label>Valor mensal do contrato (R$) *<input name="valor" inputmode="decimal" placeholder="Ex.: 1.890,00"></label>
       <label>Data de vigência *<input name="vigencia" type="date"></label>
     </div>
@@ -159,6 +164,6 @@
 </dialog>
 
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
-<script src="/negociofechado/fin.js?v=2026-11-26d" defer></script>
+<script src="/negociofechado/fin.js?v=2026-11-26e" defer></script>
 </body>
 </html>

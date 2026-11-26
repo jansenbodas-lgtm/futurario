@@ -140,9 +140,40 @@
       return { mi: mi, p: p, v: v, t: p + v, rec: rec };
     });
     renderKpis(list);
+    renderBdays();
     renderChart(totals);
     renderWarn(list);
     renderTable(list, ms, totals);
+  }
+
+  function bdayInfo(iso) {
+    if (!iso) return null;
+    var p = iso.split('-'), y = Number(p[0]), m = Number(p[1]) - 1, d = Number(p[2]);
+    var t = new Date(); t.setHours(0, 0, 0, 0);
+    function occ(year) { var dd = d; if (m === 1 && d === 29 && new Date(year, 1, 29).getMonth() !== 1) dd = 28; return new Date(year, m, dd); }
+    var next = occ(t.getFullYear()); if (next < t) next = occ(t.getFullYear() + 1);
+    return { days: Math.round((next - t) / 86400000), age: y > 1900 ? next.getFullYear() - y : null, label: String(d).padStart(2, '0') + '/' + String(m + 1).padStart(2, '0') };
+  }
+  function renderBdays() {
+    var box = $('bday');
+    var list = state.contratos.filter(function (c) { return c.status === 'ativo'; })
+      .map(function (c) { return { c: c, b: bdayInfo(c.aniversario) }; })
+      .filter(function (x) { return x.b && x.b.days <= 7; })
+      .sort(function (a, b) { return a.b.days - b.b.days; });
+    box.hidden = !list.length; box.textContent = '';
+    if (!list.length) return;
+    box.appendChild(el('p', { class: 'bday__title', text: '🎂 Aniversários de clientes nos próximos 7 dias' }));
+    var ul = el('ul');
+    list.forEach(function (x) {
+      var who = el('button', { type: 'button', class: 'who', text: x.c.nome });
+      who.addEventListener('click', function () { openContract(x.c); });
+      var d = String(x.c.telefone || '').replace(/\D/g, ''); if (d && d.length <= 11) d = '55' + d;
+      var txt = 'Feliz aniversário, ' + String(x.c.nome).split(' ')[0] + '! 🎉 Desejo muita saúde, alegria e realizações. Um abraço da Carla Jansen, Futura Rio Corretora.';
+      var when = x.b.days === 0 ? 'hoje' : x.b.days === 1 ? 'amanhã' : 'em ' + x.b.days + ' dias (' + x.b.label + ')';
+      ul.appendChild(el('li', { class: x.b.days === 0 ? 'is-today' : '' }, [who, el('span', { class: 'when', text: when + (x.b.age ? ' · ' + x.b.age + ' anos' : '') }),
+        d ? el('a', { class: 'btn btn--wa', href: 'https://wa.me/' + d + '?text=' + encodeURIComponent(txt), target: '_blank', rel: 'noopener', text: 'Parabéns no WhatsApp' }) : null]));
+    });
+    box.appendChild(ul);
   }
 
   function sumMonths(list, from, count) {
@@ -326,7 +357,7 @@
     $('c-title').textContent = c ? c.nome : 'Novo contrato';
     $('c-sub').textContent = c ? (c.leadId ? 'Copiado do CRM em ' : 'Cadastrado em ') + new Date(c.criadoEm).toLocaleDateString('pt-BR') : 'Use para contratos antigos ou fechados fora do site.';
     var f = cform.elements;
-    ['nome', 'telefone', 'produto', 'vidas', 'vigencia', 'canceladoEm', 'notas'].forEach(function (k) { f[k].value = (c && c[k]) || ''; });
+    ['nome', 'telefone', 'email', 'aniversario', 'produto', 'vidas', 'vigencia', 'canceladoEm', 'notas'].forEach(function (k) { f[k].value = (c && c[k]) || ''; });
     f.tipoPessoa.value = (c && c.tipoPessoa) || 'PJ';
     f.operadora.value = (c && c.operadora) || '';
     f.valor.value = c && c.valor ? String(c.valor.toFixed(2)).replace('.', ',') : '';
@@ -338,7 +369,7 @@
   }
   function formContract() {
     var f = cform.elements;
-    return { nome: f.nome.value.trim(), telefone: f.telefone.value.trim(), tipoPessoa: f.tipoPessoa.value, operadora: f.operadora.value,
+    return { nome: f.nome.value.trim(), telefone: f.telefone.value.trim(), email: f.email.value.trim(), aniversario: f.aniversario.value, tipoPessoa: f.tipoPessoa.value, operadora: f.operadora.value,
       produto: f.produto.value.trim(), vidas: f.vidas.value.trim(), valor: parseBRL(f.valor.value), vigencia: f.vigencia.value,
       status: f.status.value, canceladoEm: f.status.value === 'cancelado' ? f.canceladoEm.value : '', notas: f.notas.value };
   }

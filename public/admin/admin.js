@@ -134,12 +134,52 @@
     });
   }
 
+  /* ---------- aniversários ---------- */
+  function bdayInfo(iso) {
+    if (!iso) return null;
+    var p = iso.split('-'), y = Number(p[0]), m = Number(p[1]) - 1, d = Number(p[2]);
+    var t = new Date(); t.setHours(0, 0, 0, 0);
+    function occ(year) { var dd = d; if (m === 1 && d === 29 && new Date(year, 1, 29).getMonth() !== 1) dd = 28; return new Date(year, m, dd); }
+    var next = occ(t.getFullYear()); if (next < t) next = occ(t.getFullYear() + 1);
+    var days = Math.round((next - t) / 86400000);
+    var age = y > 1900 ? next.getFullYear() - y : null;
+    return { days: days, age: age, label: String(d).padStart(2, '0') + '/' + String(m + 1).padStart(2, '0') };
+  }
+  function bdayWhen(b) { return b.days === 0 ? 'hoje' : b.days === 1 ? 'amanhã' : 'em ' + b.days + ' dias (' + b.label + ')'; }
+  function bdayWa(l) {
+    var d = String(l.telefone).replace(/\D/g, ''); if (d.length <= 11) d = '55' + d;
+    var txt = 'Feliz aniversário, ' + String(l.nome).split(' ')[0] + '! 🎉 Desejo muita saúde, alegria e realizações. Um abraço da Carla Jansen, Futura Rio Corretora.';
+    return 'https://wa.me/' + d + '?text=' + encodeURIComponent(txt);
+  }
+  function renderBdays() {
+    var box = $('bday');
+    var list = state.leads.map(function (l) { return { l: l, b: bdayInfo(l.aniversario) }; })
+      .filter(function (x) { return x.b && x.b.days <= 7; })
+      .sort(function (a, b) { return a.b.days - b.b.days; });
+    box.hidden = !list.length;
+    box.textContent = '';
+    if (!list.length) return;
+    var hoje = list.filter(function (x) { return x.b.days === 0; }).length;
+    box.appendChild(el('p', { class: 'bday__title', text: '🎂 ' + (hoje ? hoje + ' aniversariante(s) hoje' + (list.length > hoje ? ' · ' + (list.length - hoje) + ' nos próximos 7 dias' : '') : list.length + ' aniversário(s) nos próximos 7 dias') }));
+    var ul = el('ul');
+    list.forEach(function (x) {
+      var who = el('button', { type: 'button', class: 'who', text: x.l.nome });
+      who.addEventListener('click', function () { openSheet(x.l, 'historico'); });
+      ul.appendChild(el('li', { class: x.b.days === 0 ? 'is-today' : '' }, [
+        who, el('span', { class: 'when', text: bdayWhen(x.b) + (x.b.age ? ' · ' + x.b.age + ' anos' : '') }),
+        el('a', { class: 'btn btn--wa', href: bdayWa(x.l), target: '_blank', rel: 'noopener', text: 'Parabéns no WhatsApp' })
+      ]));
+    });
+    box.appendChild(ul);
+  }
+
   function render() {
     document.body.classList.toggle('view-pipeline', state.view === 'pipeline');
     document.querySelectorAll('.views__btn').forEach(function (b) { b.classList.toggle('is-active', b.dataset.view === state.view); });
     $('view-pipeline').hidden = state.view !== 'pipeline';
     $('view-lista').hidden = state.view !== 'lista';
     renderKpis();
+    renderBdays();
     if (state.view === 'pipeline') renderBoard(); else renderList();
   }
 
@@ -193,6 +233,7 @@
 
     var c = el('article', { class: 'card', draggable: 'true', 'data-id': l.id, style: colVar(l.status) }, [
       el('div', { class: 'card__top' }, [el('span', { class: 'card__who' }, [el('span', { class: 'ptype ptype--' + tipoOf(l), text: tipoOf(l) }), nameBtn]), el('span', { class: 'card__date', text: fmtShort(l.criadoEm) })]),
+      (function () { var b = bdayInfo(l.aniversario); return b && b.days <= 7 ? el('div', { class: 'card__bday', text: '🎂 Aniversário ' + bdayWhen(b) }) : null; })(),
       el('div', { class: 'card__line' }, [el('a', { href: waLink(l.telefone, l.nome), target: '_blank', rel: 'noopener', text: '📱 ' + l.telefone })]),
       l.tipoPlano ? el('div', { class: 'card__line', text: '🩺 ' + l.tipoPlano + (l.vidas ? ' · ' + l.vidas + ' vida(s)' : '') }) : null,
       el('div', null, originTags(l)),
@@ -327,7 +368,15 @@
   }
   $('d-vigencia').addEventListener('input', updateVigHint);
 
-  function openSheet(l) {
+  function updateAnivHint() {
+    var b = bdayInfo($('d-aniv').value), h = $('d-aniv-hint');
+    h.textContent = b ? '🎂 Próximo aniversário ' + bdayWhen(b) + (b.age ? ', faz ' + b.age + ' anos' : '') + '. Você verá um aviso no topo do CRM 7 dias antes.' : 'Com a data de aniversário, o CRM avisa no topo e no cartão quando estiver chegando.';
+    h.classList.toggle('is-soon', !!b && b.days <= 7);
+  }
+  $('d-aniv').addEventListener('input', updateAnivHint);
+  $('d-tel').addEventListener('input', function (e) { e.target.value = maskPhone(e.target.value); });
+
+  function openSheet(l, tab) {
     state.current = l;
     $('d-nome').textContent = l.nome;
     $('d-data').textContent = 'Entrou em ' + fmtDate(l.criadoEm) + (l.atualizadoEm ? ' · atualizado em ' + fmtDate(l.atualizadoEm) : '');
@@ -340,11 +389,15 @@
     info.textContent = '';
     [['Telefone', l.telefone], ['E-mail', l.email], ['Tipo de plano', l.tipoPlano], ['Vidas', l.vidas], ['Origem', l.origem],
      ['Fonte / campanha', [l.utm_source, l.utm_medium, l.utm_campaign].filter(Boolean).join(' / ')],
-     ['Anúncio', l.gclid ? 'Google Ads' : (l.fbclid ? 'Meta Ads' : '')], ['Cidade', l.cidade], ['Página', l.pagina], ['Entrou em', fmtDate(l.criadoEm)]]
+     ['Anúncio', l.gclid ? 'Google Ads' : (l.fbclid ? 'Meta Ads' : '')], ['Aniversário', l.aniversario ? l.aniversario.split('-').reverse().join('/') : ''], ['Cidade', l.cidade], ['Página', l.pagina], ['Entrou em', fmtDate(l.criadoEm)]]
       .forEach(function (p) { if (p[1]) { info.appendChild(el('dt', { text: p[0] })); info.appendChild(el('dd', { text: p[1] })); } });
     var sel = $('d-status');
     sel.textContent = '';
     STAGES.forEach(function (s) { var o = el('option', { value: s.id, text: s.label }); if (s.id === l.status) o.selected = true; sel.appendChild(o); });
+    $('d-tel').value = l.telefone || '';
+    $('d-email').value = l.email || '';
+    $('d-aniv').value = l.aniversario || '';
+    updateAnivHint();
     $('d-tipo').value = tipoOf(l);
     $('d-interesse').value = l.interesse || '';
     $('d-negociacao').value = l.negociacao || '';
@@ -358,13 +411,13 @@
     $('d-hist').value = '';
     updateVigHint();
     renderTimeline(l);
-    showTab(['aguardando_vigencia', 'fechado'].indexOf(l.status) !== -1 ? 'contratacao' : 'negociacao');
+    showTab(tab || (['aguardando_vigencia', 'fechado'].indexOf(l.status) !== -1 ? 'contratacao' : 'negociacao'));
     if (typeof dlg.showModal === 'function') dlg.showModal(); else dlg.setAttribute('open', '');
   }
   function closeSheet() { if (typeof dlg.close === 'function') dlg.close(); else dlg.removeAttribute('open'); }
 
   function collectPatch(l) {
-    var map = { tipoPessoa: 'd-tipo', status: 'd-status', interesse: 'd-interesse', negociacao: 'd-negociacao', notas: 'd-notas',
+    var map = { telefone: 'd-tel', email: 'd-email', aniversario: 'd-aniv', tipoPessoa: 'd-tipo', status: 'd-status', interesse: 'd-interesse', negociacao: 'd-negociacao', notas: 'd-notas',
       operadora: 'd-operadora', produto: 'd-produto', valorMensal: 'd-valor', vigencia: 'd-vigencia' };
     var patch = {};
     Object.keys(map).forEach(function (k) { var v = $(map[k]).value; var cur = k === 'tipoPessoa' ? (l.tipoPessoa || '') : (l[k] || ''); if (v !== cur) patch[k] = v; });
@@ -393,7 +446,7 @@
     if (!l) return;
     var patch = collectPatch(l);
     if (!Object.keys(patch).length) { closeSheet(); return; }
-    sendPatch(l, patch, function () { closeSheet(); render(); toast(patch.status === 'fechado' ? 'Negócio fechado! Copiado para o Negócio Fechado 💰' : 'Lead atualizado'); });
+    sendPatch(l, patch, function () { if (l.telefone) { $('d-wa').href = waLink(l.telefone, l.nome); } closeSheet(); render(); toast(patch.status === 'fechado' ? 'Negócio fechado! Copiado para o Negócio Fechado 💰' : 'Lead atualizado'); });
   });
   $('d-del').addEventListener('click', function () { if (state.current) removeLead(state.current, closeSheet); });
   dlg.addEventListener('click', function (e) { if (e.target === dlg) closeSheet(); });
