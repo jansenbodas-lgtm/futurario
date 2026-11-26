@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex, nofollow">
+  <title>CRM Futura Rio</title>
+  <link rel="icon" href="/img/favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="/admin/admin.css">
+</head>
+<body>
+
+<!-- LOGIN -->
+<section id="login" class="login" hidden>
+  <form class="login__card" id="login-form">
+    <img src="/img/favicon.svg" alt="" width="52" height="52">
+    <h1>CRM Futura Rio</h1>
+    <p>Acesso restrito à equipe da corretora.</p>
+    <label>Senha<input type="password" name="senha" autocomplete="current-password" required autofocus></label>
+    <p class="err" id="login-err" role="alert"></p>
+    <button class="btn btn--primary" type="submit">Entrar</button>
+  </form>
+</section>
+
+<!-- PAINEL -->
+<div id="app" hidden>
+  <header class="bar">
+    <div class="bar__brand"><img src="/img/favicon.svg" alt="" width="34" height="34"><strong>CRM Futura Rio</strong></div>
+    <div class="bar__actions">
+      <a class="btn btn--ghost" href="/admin/api/leads.csv">Exportar CSV</a>
+      <button class="btn btn--ghost" id="refresh" type="button">Atualizar</button>
+      <button class="btn btn--ghost" id="logout" type="button">Sair</button>
+    </div>
+  </header>
+
+  <main class="main">
+    <ul class="kpis" id="kpis"></ul>
+
+    <div class="filters">
+      <input type="search" id="q" placeholder="Buscar por nome, telefone, e-mail ou campanha...">
+      <select id="f-status"><option value="">Todos os status</option></select>
+      <select id="f-periodo">
+        <option value="">Todo o período</option>
+        <option value="1">Hoje</option>
+        <option value="7">Últimos 7 dias</option>
+        <option value="30">Últimos 30 dias</option>
+      </select>
+    </div>
+
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Data</th>
+            <th>Cliente</th>
+            <th>Contato</th>
+            <th>Interesse</th>
+            <th>Origem</th>
+            <th>Status</th>
+            <th>Notas</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody id="rows"></tbody>
+      </table>
+      <p class="empty" id="empty" hidden>Nenhum lead encontrado.</p>
+    </div>
+  </main>
+</div>
+
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<script src="/admin/admin.js" defer></script>
+</body>
+</html>
