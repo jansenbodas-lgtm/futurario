@@ -52,8 +52,8 @@ Os leads ficam em `DATA_DIR/leads.json`. Use uma pasta/volume **persistente** e 
 
 | Novos depoimentos do Google | `public/index.html`, seção `#depoimentos` |
 
-| Registro SUSEP (CNPJ já incluído) | rodapé do `public/index.html` |
-| Domínio definitivo | `canonical`, `og:*`, JSON-LD, `robots.txt` e `sitemap.xml` (hoje `www.futurario.com.br`) |
+
+| Domínio definitivo | `canonical`, `og:*`, JSON-LD, `robots.txt` e `sitemap.xml` (`planosdesaude.futurariocorretora.com.br`) |
 
 | Meta Pixel / Google Ads / GA4 | bloco comentado no `<head>` do `public/index.html` |
 | Senha do painel | `.env`, `ADMIN_PASSWORD` |

@@ -3,4 +3,4 @@ Allow: /
 Disallow: /admin/
 Disallow: /api/
 
-Sitemap: https://www.futurario.com.br/sitemap.xml
+Sitemap: https://planosdesaude.futurariocorretora.com.br/sitemap.xml
