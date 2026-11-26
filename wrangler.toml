@@ -1,7 +1,14 @@
-# Configuração do Cloudflare Pages (lida automaticamente no deploy)
+# Configuração do Cloudflare Worker "futurario" (lida automaticamente no deploy)
 name = "futurario"
+main = "worker.js"
 compatibility_date = "2026-11-01"
-pages_build_output_dir = "public"
+
+# Site estático (landing page + painel /admin)
+[assets]
+directory = "./public"
+binding = "ASSETS"
+not_found_handling = "404-page"
+run_worker_first = ["/api/*", "/admin/api/*"]
 
 # Armazenamento dos leads do CRM
 [[kv_namespaces]]
@@ -9,4 +16,4 @@ binding = "LEADS"
 id = "7db82a8e071c4fb6948cd04a44a96205"
 
 # ADMIN_PASSWORD e SESSION_SECRET NÃO ficam aqui:
-# cadastre-os como "Secret" em Settings > Variables and Secrets no painel do Cloudflare.
+# cadastre-os como "Secret" em Settings > Variables and Secrets do Worker no painel do Cloudflare.
