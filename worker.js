@@ -22,6 +22,13 @@ export default {
       return adminApi({ request, env, ctx, params: { path } });
     }
 
+    if (p === '/api/config' && request.method === 'GET') {
+      // Rótulo da conversão do Google Ads vem do Secret "id_google_ads" (aceita só o rótulo ou "AW-xxx/rótulo")
+      const raw = String(env.id_google_ads || env.GOOGLE_ADS_LABEL || '').trim();
+      const gadsLabel = raw.includes('/') ? raw.split('/').pop().trim() : raw;
+      return json({ gadsId: 'AW-854308397', gadsLabel }, 200, { 'Cache-Control': 'public, max-age=300' });
+    }
+
     if (p.startsWith('/negociofechado/api/')) {
       const path = p.slice('/negociofechado/api/'.length).split('/').filter(Boolean);
       return finApi({ request, env, ctx, params: { path } });

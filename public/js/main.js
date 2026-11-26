@@ -79,11 +79,23 @@
     return errs;
   }
 
+  /* Google Ads: busca o rótulo de conversão configurado no Cloudflare */
+  var GADS = { id: 'AW-854308397', label: '' };
+  try {
+    fetch('/api/config').then(function (r) { return r.json(); }).then(function (c) {
+      if (c && c.gadsLabel) GADS.label = c.gadsLabel;
+      if (c && c.gadsId) GADS.id = c.gadsId;
+    }).catch(function () {});
+  } catch (e) { /* sem rede */ }
+
   function track(evt, data) {
     try {
       if (evt === 'Lead') {
         if (window.fbq) window.fbq('track', 'Lead', data || {});
-        if (window.gtag) window.gtag('event', 'generate_lead', data || {});
+        if (window.gtag) {
+          window.gtag('event', 'generate_lead', data || {});
+          if (GADS.label) window.gtag('event', 'conversion', { send_to: GADS.id + '/' + GADS.label, transport_type: 'beacon' });
+        }
       } else {
         if (window.fbq) window.fbq(evt === 'OpenLeadForm' ? 'track' : 'trackCustom', evt === 'OpenLeadForm' ? 'Contact' : evt, data || {});
         if (window.gtag) window.gtag('event', evt, data || {});
@@ -145,7 +157,7 @@
           track('Lead', { content_name: plano || 'Plano de saúde', origem: payload.origem });
           msg.className = 'form-msg ok';
           msg.textContent = 'Pronto! Abrindo o WhatsApp...';
-          setTimeout(function () { location.href = whatsappUrl(nome, plano); }, 400);
+          setTimeout(function () { location.href = whatsappUrl(nome, plano); }, window.gtag ? 700 : 400);
         })
         .catch(function (err) {
           clearTimeout(timer);

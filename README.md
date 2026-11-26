@@ -49,6 +49,6 @@ Regras PJ iniciais: Amil, SulAmérica, Bradesco e Porto 100/100/100 + 2% vitalí
 
 | Domínio definitivo | `canonical`, `og:*`, JSON-LD, `robots.txt` e `sitemap.xml` (`planosdesaude.futurariocorretora.com.br`) |
 
-| Google Ads / GA4 (Meta Pixel 433140727818457 já instalado) | bloco comentado no `<head>` do `public/index.html` |
+| GA4 (Meta Pixel 433140727818457 e Google Ads AW-854308397 já instalados; rótulo da conversão no Secret `id_google_ads`) | bloco comentado no `<head>` do `public/index.html` |
 
 Depois de publicar, cadastre o site no **Google Search Console**, envie o `sitemap.xml` e coloque o link do site nas duas fichas do Google (Futura Rio e Carla Jansen).

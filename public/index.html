@@ -118,10 +118,12 @@
   <noscript><img height="1" width="1" style="display:none" alt="" src="https://www.facebook.com/tr?id=433140727818457&ev=PageView&noscript=1"></noscript>
   <!-- O evento "Lead" é disparado pelo js/main.js quando o formulário/popup é enviado. -->
 
-  <!-- ============ Google Ads / GA4 (quando tiver os IDs, substitua e descomente) ============
-  <script async src="https://www.googletagmanager.com/gtag/js?id=G-XXXXXXX"></script>
-  <script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('config','G-XXXXXXX');gtag('config','AW-XXXXXXX');</script>
-  -->
+  <!-- ============ Google Ads (AW-854308397) ============
+       O rótulo da conversão vem do Secret "id_google_ads" no Cloudflare (via /api/config);
+       a conversão é enviada pelo js/main.js quando o lead é enviado. -->
+  <script async src="https://www.googletagmanager.com/gtag/js?id=AW-854308397"></script>
+  <script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('config','AW-854308397');</script>
+  <!-- GA4: quando tiver o ID (G-XXXXXXX), acrescente gtag('config','G-XXXXXXX'); acima. -->
 </head>
 <body>
 
@@ -672,6 +674,6 @@
   <symbol id="i-lock" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></g></symbol>
 </svg>
 
-<script src="/js/main.js?v=2026-11-26b" defer></script>
+<script src="/js/main.js?v=2026-11-26c" defer></script>
 </body>
 </html>
