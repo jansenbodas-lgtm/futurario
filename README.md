@@ -51,7 +51,7 @@ Os leads ficam em `DATA_DIR/leads.json`. Use uma pasta/volume **persistente** e 
 | Logo (versão em alta resolução, PNG ou SVG) | `public/img/logo-futura-rio.png` |
 
 | Novos depoimentos do Google | `public/index.html`, seção `#depoimentos` |
-| Operadoras com que trabalha | `public/index.html`, seção `#operadoras` |
+
 | Registro SUSEP (CNPJ já incluído) | rodapé do `public/index.html` |
 | Domínio definitivo | `canonical`, `og:*`, JSON-LD, `robots.txt` e `sitemap.xml` (hoje `www.futurario.com.br`) |
 
