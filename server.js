@@ -28,7 +28,9 @@ const ADMIN_DIR = path.join(PUBLIC_DIR, 'admin');
 const LEADS_FILE = path.join(DATA_DIR, 'leads.json');
 const SESSION_TTL_MS = 1000 * 60 * 60 * 12; // 12h
 
-const STATUSES = ['novo', 'em_contato', 'cotacao_enviada', 'negociando', 'fechado', 'perdido'];
+const STATUSES = ['primeiro_contato', 'cotacao_enviada', 'negociando', 'aguardando_vigencia', 'fechado', 'sem_contato'];
+const LEGACY_STATUS = { novo: 'primeiro_contato', em_contato: 'primeiro_contato', perdido: 'sem_contato' };
+const normalizeStatus = (s) => LEGACY_STATUS[s] || (STATUSES.includes(s) ? s : 'primeiro_contato');
 
 if (!ADMIN_PASSWORD) {
   console.warn('[aviso] ADMIN_PASSWORD não definido: usando a senha provisória "admin". Troque no .env!');
@@ -45,6 +47,7 @@ let leads = [];
 try {
   leads = JSON.parse(fs.readFileSync(LEADS_FILE, 'utf8'));
   if (!Array.isArray(leads)) leads = [];
+  leads.forEach((l) => { l.status = normalizeStatus(l.status); });
 } catch (_) {
   leads = [];
 }
@@ -264,7 +267,7 @@ async function handleCreateLead(req, res) {
     fbclid: clean(utm.fbclid, 200),
     pagina: clean(body.pagina, 300),
     referrer: clean(body.referrer, 300),
-    status: 'novo',
+    status: 'primeiro_contato',
     notas: '',
     ip,
     atualizadoEm: new Date().toISOString(),
@@ -279,7 +282,7 @@ async function handleCreateLead(req, res) {
 /* API do painel                                                       */
 /* ------------------------------------------------------------------ */
 function toCSV(rows) {
-  const cols = ['criadoEm', 'nome', 'telefone', 'email', 'tipoPlano', 'vidas', 'status', 'notas', 'origem',
+  const cols = ['criadoEm', 'atualizadoEm', 'nome', 'telefone', 'email', 'tipoPlano', 'vidas', 'status', 'notas', 'origem',
     'utm_source', 'utm_medium', 'utm_campaign', 'utm_term', 'utm_content', 'gclid', 'fbclid', 'pagina', 'referrer'];
   const esc = (v) => {
     let s = String(v ?? '');
@@ -311,6 +314,31 @@ async function handleAdminApi(req, res, url) {
   }
 
   if (!isAuthed(req)) return sendJSON(res, 401, { ok: false, error: 'Não autenticado.' });
+
+  if (route === '/leads' && req.method === 'POST') {
+    let body;
+    try { body = await readJSON(req); } catch (_) { return sendJSON(res, 400, { ok: false, error: 'Requisição inválida.' }); }
+    const nome = clean(body.nome, 120);
+    const telefone = clean(body.telefone, 30).replace(/[^\d+()\s-]/g, '');
+    const email = clean(body.email, 160).toLowerCase();
+    if (nome.length < 2) return sendJSON(res, 422, { ok: false, error: 'Informe o nome.' });
+    if (telefone.replace(/\D/g, '').length < 10) return sendJSON(res, 422, { ok: false, error: 'Informe o telefone com DDD.' });
+    if (email && !EMAIL_RE.test(email)) return sendJSON(res, 422, { ok: false, error: 'E-mail inválido.' });
+    const now = new Date().toISOString();
+    const lead = {
+      id: crypto.randomUUID(), criadoEm: now, atualizadoEm: now,
+      nome, telefone, email,
+      tipoPlano: clean(body.tipoPlano, 60), vidas: clean(body.vidas, 20),
+      origem: 'manual', utm_source: clean(body.fonte, 60),
+      utm_medium: '', utm_campaign: '', utm_term: '', utm_content: '', gclid: '', fbclid: '',
+      pagina: '', referrer: '', ip: '',
+      status: STATUSES.includes(body.status) ? body.status : 'primeiro_contato',
+      notas: clean(body.notas, 2000),
+    };
+    leads.unshift(lead);
+    await persist();
+    return sendJSON(res, 201, { ok: true, lead });
+  }
 
   if (route === '/leads' && req.method === 'GET') {
     return sendJSON(res, 200, { ok: true, leads, statuses: STATUSES });

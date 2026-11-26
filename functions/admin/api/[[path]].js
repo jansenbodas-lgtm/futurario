@@ -1,7 +1,7 @@
 // /admin/api/* — API do CRM (Cloudflare Pages Function)
 import {
   json, clean, readJSON, STATUSES, SESSION_TTL_S, safeEqual, createSession, isAuthed,
-  sessionCookie, listLeads, findLeadKey, toCSV, rateLimited, adminPassword,
+  sessionCookie, listLeads, findLeadKey, toCSV, rateLimited, adminPassword, normalizeStatus, leadKey,
 } from '../../../lib/cf.js';
 
 export async function onRequest({ request, env, params }) {
@@ -29,6 +29,30 @@ export async function onRequest({ request, env, params }) {
 
   if (!(await isAuthed(request, env))) return json({ ok: false, error: 'Não autenticado.' }, 401);
 
+  if (route === '/leads' && method === 'POST') {
+    let body;
+    try { body = await readJSON(request); } catch (_) { return json({ ok: false, error: 'Requisição inválida.' }, 400); }
+    const nome = clean(body.nome, 120);
+    const telefone = clean(body.telefone, 30).replace(/[^\d+()\s-]/g, '');
+    const email = clean(body.email, 160).toLowerCase();
+    if (nome.length < 2) return json({ ok: false, error: 'Informe o nome.' }, 422);
+    if (telefone.replace(/\D/g, '').length < 10) return json({ ok: false, error: 'Informe o telefone com DDD.' }, 422);
+    if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email)) return json({ ok: false, error: 'E-mail inválido.' }, 422);
+    const now = new Date().toISOString();
+    const lead = {
+      id: crypto.randomUUID(), criadoEm: now, atualizadoEm: now,
+      nome, telefone, email,
+      tipoPlano: clean(body.tipoPlano, 60), vidas: clean(body.vidas, 20),
+      origem: 'manual', utm_source: clean(body.fonte, 60),
+      utm_medium: '', utm_campaign: '', utm_term: '', utm_content: '', gclid: '', fbclid: '',
+      pagina: '', referrer: '', ip: '', cidade: '',
+      status: STATUSES.includes(body.status) ? body.status : 'primeiro_contato',
+      notas: clean(body.notas, 2000),
+    };
+    await env.LEADS.put(leadKey(lead), JSON.stringify(lead));
+    return json({ ok: true, lead }, 201);
+  }
+
   if (route === '/leads' && method === 'GET') {
     return json({ ok: true, leads: await listLeads(env), statuses: STATUSES });
   }
@@ -53,6 +77,7 @@ export async function onRequest({ request, env, params }) {
       let body;
       try { body = await readJSON(request); } catch (_) { return json({ ok: false }, 400); }
       const lead = await env.LEADS.get(key, 'json');
+      lead.status = normalizeStatus(lead.status);
       if (body.status !== undefined) {
         if (!STATUSES.includes(body.status)) return json({ ok: false, error: 'Status inválido.' }, 422);
         lead.status = body.status;

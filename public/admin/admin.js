@@ -1,18 +1,25 @@
 (function () {
   'use strict';
 
-  var STATUS_LABEL = {
-    novo: 'Novo',
-    em_contato: 'Em contato',
-    cotacao_enviada: 'Cotação enviada',
-    negociando: 'Negociando',
-    fechado: 'Fechado',
-    perdido: 'Perdido'
-  };
+  /* Etapas do pipeline, na ordem das colunas */
+  var STAGES = [
+    { id: 'primeiro_contato', label: 'Primeiro contato' },
+    { id: 'cotacao_enviada', label: 'Cotação enviada' },
+    { id: 'negociando', label: 'Negociando' },
+    { id: 'aguardando_vigencia', label: 'Aguardando vigência' },
+    { id: 'fechado', label: 'Negócio fechado' },
+    { id: 'sem_contato', label: 'Não consigo mais contato' }
+  ];
+  var LABEL = {};
+  STAGES.forEach(function (s) { LABEL[s.id] = s.label; });
+  var LEGACY = { novo: 'primeiro_contato', em_contato: 'primeiro_contato', perdido: 'sem_contato' };
+  function norm(s) { return LEGACY[s] || (LABEL[s] ? s : 'primeiro_contato'); }
 
-  var state = { leads: [], statuses: Object.keys(STATUS_LABEL) };
+  var state = { leads: [], view: 'pipeline', current: null };
   var $ = function (id) { return document.getElementById(id); };
+  try { state.view = localStorage.getItem('fr_view') || 'pipeline'; } catch (e) { /* ok */ }
 
+  /* ---------- utilidades ---------- */
   function api(path, opts) {
     opts = opts || {};
     opts.headers = Object.assign({ 'Content-Type': 'application/json' }, opts.headers || {});
@@ -21,7 +28,6 @@
       return r.json().catch(function () { return {}; }).then(function (j) { j._status = r.status; return j; });
     });
   }
-
   function toast(msg) {
     var t = $('toast');
     t.textContent = msg;
@@ -29,31 +35,50 @@
     clearTimeout(toast._t);
     toast._t = setTimeout(function () { t.classList.remove('show'); }, 2200);
   }
-
   function el(tag, attrs, children) {
     var n = document.createElement(tag);
     if (attrs) Object.keys(attrs).forEach(function (k) {
       if (k === 'text') n.textContent = attrs[k];
       else if (k === 'class') n.className = attrs[k];
+      else if (k === 'style') n.setAttribute('style', attrs[k]);
       else n.setAttribute(k, attrs[k]);
     });
     (children || []).forEach(function (c) { if (c) n.appendChild(typeof c === 'string' ? document.createTextNode(c) : c); });
     return n;
   }
-
   function fmtDate(iso) {
     var d = new Date(iso);
     return d.toLocaleDateString('pt-BR') + ' ' + d.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
   }
-
+  function fmtShort(iso) {
+    var d = new Date(iso);
+    return d.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' });
+  }
+  function daysSince(iso) { return Math.floor((Date.now() - new Date(iso).getTime()) / 86400000); }
   function waLink(tel, nome) {
     var d = String(tel).replace(/\D/g, '');
     if (d.length <= 11) d = '55' + d;
-    var txt = 'Olá, ' + nome.split(' ')[0] + '! Aqui é a Carla Jansen, da Futura Rio. Recebi seu contato pelo site e vou preparar sua cotação.';
+    var txt = 'Olá, ' + String(nome).split(' ')[0] + '! Aqui é a Carla Jansen, da Futura Rio. Recebi seu contato pelo site e vou preparar sua cotação.';
     return 'https://wa.me/' + d + '?text=' + encodeURIComponent(txt);
   }
+  function colVar(status) { return '--col: var(--c-' + status + ')'; }
+  function stageSelect(current, cls) {
+    var sel = el('select', { class: cls || '', 'aria-label': 'Etapa', style: colVar(current) });
+    STAGES.forEach(function (s) {
+      var o = el('option', { value: s.id, text: s.label });
+      if (s.id === current) o.selected = true;
+      sel.appendChild(o);
+    });
+    return sel;
+  }
+  function originTags(l) {
+    var tags = [l.origem, l.utm_source, l.utm_campaign].filter(Boolean).map(function (t) { return el('span', { class: 'tag', text: t }); });
+    if (l.gclid) tags.push(el('span', { class: 'tag', text: 'Google Ads' }));
+    if (l.fbclid) tags.push(el('span', { class: 'tag', text: 'Meta Ads' }));
+    return tags;
+  }
 
-  /* ---------- Login ---------- */
+  /* ---------- login ---------- */
   function showLogin() { $('app').hidden = true; $('login').hidden = false; }
   function showApp() { $('login').hidden = true; $('app').hidden = false; }
 
@@ -66,63 +91,68 @@
       load();
     });
   });
-
-  $('logout').addEventListener('click', function () {
-    api('/logout', { method: 'POST' }).then(showLogin);
-  });
+  $('logout').addEventListener('click', function () { api('/logout', { method: 'POST' }).then(showLogin); });
   $('refresh').addEventListener('click', function () { load(true); });
 
-  /* ---------- Dados ---------- */
+  /* ---------- dados ---------- */
   function load(notify) {
     api('/leads').then(function (r) {
       if (r._status === 401) { showLogin(); return; }
-      state.leads = r.leads || [];
-      state.statuses = r.statuses || state.statuses;
+      state.leads = (r.leads || []).map(function (l) { l.status = norm(l.status); return l; });
       showApp();
       fillStatusFilter();
       render();
-      if (notify) toast('Lista atualizada');
+      if (notify) toast('Atualizado');
     });
   }
 
   function fillStatusFilter() {
     var sel = $('f-status');
     if (sel.options.length > 1) return;
-    state.statuses.forEach(function (s) { sel.appendChild(el('option', { value: s, text: STATUS_LABEL[s] || s })); });
+    STAGES.forEach(function (s) { sel.appendChild(el('option', { value: s.id, text: s.label })); });
   }
 
-  function filtered() {
+  function filtered(ignoreStatus) {
     var q = $('q').value.trim().toLowerCase();
-    var st = $('f-status').value;
+    var qd = q.replace(/\D/g, '');
+    var st = ignoreStatus ? '' : $('f-status').value;
     var days = Number($('f-periodo').value);
     var since = 0;
-    if (days) {
-      var start = new Date(); start.setHours(0, 0, 0, 0);
-      since = start.getTime() - (days - 1) * 86400000;
-    }
+    if (days) { var s = new Date(); s.setHours(0, 0, 0, 0); since = s.getTime() - (days - 1) * 86400000; }
     return state.leads.filter(function (l) {
       if (st && l.status !== st) return false;
       if (since && new Date(l.criadoEm).getTime() < since) return false;
       if (q) {
         var hay = [l.nome, l.telefone, l.email, l.utm_source, l.utm_campaign, l.tipoPlano, l.origem, l.notas].join(' ').toLowerCase();
-        if (hay.indexOf(q) === -1 && hay.replace(/\D/g, '').indexOf(q.replace(/\D/g, '') || '§') === -1) return false;
+        var hit = hay.indexOf(q) !== -1 || (qd.length >= 3 && String(l.telefone).replace(/\D/g, '').indexOf(qd) !== -1);
+        if (!hit) return false;
       }
       return true;
     });
+  }
+
+  function render() {
+    document.body.classList.toggle('view-pipeline', state.view === 'pipeline');
+    document.querySelectorAll('.views__btn').forEach(function (b) { b.classList.toggle('is-active', b.dataset.view === state.view); });
+    $('view-pipeline').hidden = state.view !== 'pipeline';
+    $('view-lista').hidden = state.view !== 'lista';
+    renderKpis();
+    if (state.view === 'pipeline') renderBoard(); else renderList();
   }
 
   function renderKpis() {
     var today = new Date(); today.setHours(0, 0, 0, 0);
     var week = today.getTime() - 6 * 86400000;
     var L = state.leads;
-    var count = function (fn) { return L.filter(fn).length; };
-    var fechados = count(function (l) { return l.status === 'fechado'; });
+    var c = function (fn) { return L.filter(fn).length; };
+    var fechados = c(function (l) { return l.status === 'fechado'; });
+    var ativos = c(function (l) { return ['primeiro_contato', 'cotacao_enviada', 'negociando', 'aguardando_vigencia'].indexOf(l.status) !== -1; });
     var items = [
       [L.length, 'Leads no total'],
-      [count(function (l) { return new Date(l.criadoEm) >= today; }), 'Hoje'],
-      [count(function (l) { return new Date(l.criadoEm).getTime() >= week; }), 'Últimos 7 dias'],
-      [count(function (l) { return l.status === 'novo'; }), 'Aguardando contato'],
-      [fechados, 'Fechados'],
+      [c(function (l) { return new Date(l.criadoEm) >= today; }), 'Novos hoje'],
+      [c(function (l) { return new Date(l.criadoEm).getTime() >= week; }), 'Últimos 7 dias'],
+      [ativos, 'Em andamento'],
+      [fechados, 'Negócios fechados'],
       [L.length ? Math.round((fechados / L.length) * 100) + '%' : '0%', 'Conversão']
     ];
     var ul = $('kpis');
@@ -130,53 +160,104 @@
     items.forEach(function (it) { ul.appendChild(el('li', null, [el('strong', { text: String(it[0]) }), el('span', { text: it[1] })])); });
   }
 
-  function render() {
-    renderKpis();
+  /* ---------- pipeline ---------- */
+  function renderBoard() {
+    var board = $('view-pipeline');
+    board.textContent = '';
+    var list = filtered(true);
+    STAGES.forEach(function (stage, idx) {
+      var items = list.filter(function (l) { return l.status === stage.id; });
+      var colList = el('div', { class: 'col__list', 'data-stage': stage.id });
+      if (!items.length) colList.appendChild(el('p', { class: 'col__empty', text: 'Arraste um lead para cá' }));
+      items.forEach(function (l) { colList.appendChild(card(l)); });
+      bindDrop(colList);
+      board.appendChild(el('div', { class: 'col' + (idx === STAGES.length - 1 ? ' col--last' : ''), style: colVar(stage.id) }, [
+        el('div', { class: 'col__head' }, [el('span', { class: 'col__title', text: stage.label }), el('span', { class: 'col__count', text: String(items.length) })]),
+        colList
+      ]));
+    });
+  }
+
+  function card(l) {
+    var age = daysSince(l.atualizadoEm || l.criadoEm);
+    var parado = age >= 3 && ['primeiro_contato', 'cotacao_enviada', 'negociando'].indexOf(l.status) !== -1;
+    var move = stageSelect(l.status, 'card__move');
+    move.addEventListener('change', function () { setStatus(l, move.value); });
+    move.addEventListener('mousedown', function (e) { e.stopPropagation(); });
+
+    var nameBtn = el('button', { type: 'button', class: 'card__name', text: l.nome });
+    nameBtn.addEventListener('click', function () { openSheet(l); });
+
+    var c = el('article', { class: 'card', draggable: 'true', 'data-id': l.id, style: colVar(l.status) }, [
+      el('div', { class: 'card__top' }, [nameBtn, el('span', { class: 'card__date', text: fmtShort(l.criadoEm) })]),
+      el('div', { class: 'card__line' }, [el('a', { href: waLink(l.telefone, l.nome), target: '_blank', rel: 'noopener', text: '📱 ' + l.telefone })]),
+      l.tipoPlano ? el('div', { class: 'card__line', text: '🩺 ' + l.tipoPlano + (l.vidas ? ' · ' + l.vidas + ' vida(s)' : '') }) : null,
+      el('div', null, originTags(l)),
+      l.notas ? el('div', { class: 'card__notes', text: l.notas }) : null,
+      el('div', { class: 'card__foot' }, [
+        move,
+        el('span', { class: 'card__age' + (parado ? ' is-old' : ''), text: age === 0 ? 'hoje' : (parado ? '⚠ ' : '') + age + 'd sem mudança' })
+      ])
+    ]);
+    c.addEventListener('dragstart', function (e) {
+      c.classList.add('is-dragging');
+      e.dataTransfer.effectAllowed = 'move';
+      e.dataTransfer.setData('text/plain', l.id);
+    });
+    c.addEventListener('dragend', function () { c.classList.remove('is-dragging'); });
+    c.addEventListener('dblclick', function () { openSheet(l); });
+    return c;
+  }
+
+  function bindDrop(zone) {
+    zone.addEventListener('dragover', function (e) { e.preventDefault(); e.dataTransfer.dropEffect = 'move'; zone.classList.add('is-over'); });
+    zone.addEventListener('dragleave', function (e) { if (!zone.contains(e.relatedTarget)) zone.classList.remove('is-over'); });
+    zone.addEventListener('drop', function (e) {
+      e.preventDefault();
+      zone.classList.remove('is-over');
+      var id = e.dataTransfer.getData('text/plain');
+      var lead = state.leads.find(function (x) { return x.id === id; });
+      if (lead && lead.status !== zone.dataset.stage) setStatus(lead, zone.dataset.stage);
+    });
+  }
+
+  function setStatus(lead, status) {
+    var prev = lead.status;
+    lead.status = status;
+    lead.atualizadoEm = new Date().toISOString();
+    render();
+    api('/leads/' + lead.id, { method: 'PATCH', body: JSON.stringify({ status: status }) }).then(function (r) {
+      if (!r.ok) { lead.status = prev; render(); return toast(r.error || 'Erro ao salvar'); }
+      Object.assign(lead, r.lead, { status: norm(r.lead.status) });
+      toast('Movido para "' + LABEL[status] + '"');
+    });
+  }
+
+  /* ---------- lista ---------- */
+  function renderList() {
     var rows = $('rows');
     rows.textContent = '';
-    var list = filtered();
+    var list = filtered(false);
     $('empty').hidden = list.length > 0;
-
     list.forEach(function (l) {
-      var sel = el('select', { class: 's-' + l.status, 'aria-label': 'Status' });
-      state.statuses.forEach(function (s) {
-        var o = el('option', { value: s, text: STATUS_LABEL[s] || s });
-        if (s === l.status) o.selected = true;
-        sel.appendChild(o);
-      });
-      sel.addEventListener('change', function () {
-        update(l, { status: sel.value }, function () { sel.className = 's-' + sel.value; toast('Status atualizado'); });
-      });
-
+      var sel = stageSelect(l.status);
+      sel.addEventListener('change', function () { setStatus(l, sel.value); });
       var notes = el('textarea', { placeholder: 'Anotações...', 'aria-label': 'Notas' });
       notes.value = l.notas || '';
-      notes.addEventListener('change', function () { update(l, { notas: notes.value }, function () { toast('Nota salva'); }); });
-
+      notes.addEventListener('change', function () { saveNotes(l, notes.value); });
       var del = el('button', { class: 'del', title: 'Excluir lead', 'aria-label': 'Excluir lead', text: '🗑' });
-      del.addEventListener('click', function () {
-        if (!confirm('Excluir o lead de ' + l.nome + '? Essa ação não pode ser desfeita.')) return;
-        api('/leads/' + l.id, { method: 'DELETE' }).then(function (r) {
-          if (!r.ok) return toast(r.error || 'Erro ao excluir');
-          state.leads = state.leads.filter(function (x) { return x.id !== l.id; });
-          render();
-          toast('Lead excluído');
-        });
-      });
-
-      var origemTags = [l.origem, l.utm_source, l.utm_medium, l.utm_campaign]
-        .filter(Boolean).map(function (t) { return el('span', { class: 'tag', text: t }); });
-      if (l.gclid) origemTags.push(el('span', { class: 'tag', text: 'Google Ads' }));
-      if (l.fbclid) origemTags.push(el('span', { class: 'tag', text: 'Meta Ads' }));
-
+      del.addEventListener('click', function () { removeLead(l); });
+      var nm = el('button', { type: 'button', class: 'name', text: l.nome });
+      nm.addEventListener('click', function () { openSheet(l); });
       rows.appendChild(el('tr', null, [
         el('td', { text: fmtDate(l.criadoEm) }),
-        el('td', null, [el('span', { class: 'name', text: l.nome })]),
+        el('td', null, [nm]),
         el('td', null, [
           el('a', { class: 'wa-link', href: waLink(l.telefone, l.nome), target: '_blank', rel: 'noopener', text: '📱 ' + l.telefone }),
           el('small', null, [el('a', { class: 'mail', href: 'mailto:' + l.email, text: l.email })])
         ]),
         el('td', null, [el('span', { text: l.tipoPlano || '—' }), l.vidas ? el('small', { text: l.vidas + ' vida(s)' }) : null]),
-        el('td', null, origemTags.length ? origemTags : [el('span', { text: '—' })]),
+        el('td', null, originTags(l).length ? originTags(l) : [el('span', { text: '—' })]),
         el('td', null, [sel]),
         el('td', null, [notes]),
         el('td', null, [del])
@@ -184,21 +265,130 @@
     });
   }
 
-  function update(lead, patch, done) {
-    api('/leads/' + lead.id, { method: 'PATCH', body: JSON.stringify(patch) }).then(function (r) {
+  function saveNotes(lead, value, done) {
+    api('/leads/' + lead.id, { method: 'PATCH', body: JSON.stringify({ notas: value }) }).then(function (r) {
       if (!r.ok) return toast(r.error || 'Erro ao salvar');
-      Object.assign(lead, r.lead);
-      if (patch.status) renderKpis();
-      done && done();
+      Object.assign(lead, r.lead, { status: norm(r.lead.status) });
+      toast('Anotação salva');
+      if (done) done();
     });
   }
 
-  ['q', 'f-status', 'f-periodo'].forEach(function (id) {
-    $(id).addEventListener('input', render);
+  function removeLead(lead, done) {
+    if (!confirm('Excluir o lead de ' + lead.nome + '? Essa ação não pode ser desfeita.')) return;
+    api('/leads/' + lead.id, { method: 'DELETE' }).then(function (r) {
+      if (!r.ok) return toast(r.error || 'Erro ao excluir');
+      state.leads = state.leads.filter(function (x) { return x.id !== lead.id; });
+      render();
+      toast('Lead excluído');
+      if (done) done();
+    });
+  }
+
+  /* ---------- ficha do lead ---------- */
+  var dlg = $('lead-dialog');
+  function openSheet(l) {
+    state.current = l;
+    $('d-nome').textContent = l.nome;
+    $('d-data').textContent = 'Entrou em ' + fmtDate(l.criadoEm) + (l.atualizadoEm ? ' · atualizado em ' + fmtDate(l.atualizadoEm) : '');
+    $('d-wa').href = waLink(l.telefone, l.nome);
+    $('d-wa').textContent = '📱 ' + l.telefone;
+    $('d-mail').href = 'mailto:' + l.email;
+    $('d-mail').textContent = '✉️ ' + l.email;
+    var info = $('d-info');
+    info.textContent = '';
+    [['Interesse', l.tipoPlano], ['Vidas', l.vidas], ['Origem', l.origem], ['Campanha', [l.utm_source, l.utm_medium, l.utm_campaign].filter(Boolean).join(' / ')],
+     ['Anúncio', l.gclid ? 'Google Ads' : (l.fbclid ? 'Meta Ads' : '')], ['Cidade', l.cidade], ['Página', l.pagina]]
+      .forEach(function (p) { if (p[1]) { info.appendChild(el('dt', { text: p[0] })); info.appendChild(el('dd', { text: p[1] })); } });
+    var sel = $('d-status');
+    sel.textContent = '';
+    STAGES.forEach(function (s) { var o = el('option', { value: s.id, text: s.label }); if (s.id === l.status) o.selected = true; sel.appendChild(o); });
+    $('d-notas').value = l.notas || '';
+    if (typeof dlg.showModal === 'function') dlg.showModal(); else dlg.setAttribute('open', '');
+  }
+  function closeSheet() { if (typeof dlg.close === 'function') dlg.close(); else dlg.removeAttribute('open'); }
+
+  $('d-save').addEventListener('click', function () {
+    var l = state.current;
+    if (!l) return;
+    var patch = {};
+    if ($('d-status').value !== l.status) patch.status = $('d-status').value;
+    if ($('d-notas').value !== (l.notas || '')) patch.notas = $('d-notas').value;
+    if (!Object.keys(patch).length) { closeSheet(); return; }
+    api('/leads/' + l.id, { method: 'PATCH', body: JSON.stringify(patch) }).then(function (r) {
+      if (!r.ok) return toast(r.error || 'Erro ao salvar');
+      Object.assign(l, r.lead, { status: norm(r.lead.status) });
+      closeSheet();
+      render();
+      toast('Lead atualizado');
+    });
+  });
+  $('d-del').addEventListener('click', function () { if (state.current) removeLead(state.current, closeSheet); });
+  dlg.addEventListener('click', function (e) { if (e.target === dlg) closeSheet(); });
+
+  /* ---------- novo lead manual ---------- */
+  var ndlg = $('new-dialog');
+  var nform = $('new-form');
+  (function () {
+    var sel = $('n-status');
+    STAGES.forEach(function (s) { sel.appendChild(el('option', { value: s.id, text: s.label })); });
+  })();
+  function maskPhone(v) {
+    var d = v.replace(/\D/g, '').slice(0, 11);
+    if (d.length <= 2) return d.length ? '(' + d : '';
+    if (d.length <= 6) return '(' + d.slice(0, 2) + ') ' + d.slice(2);
+    if (d.length <= 10) return '(' + d.slice(0, 2) + ') ' + d.slice(2, 6) + '-' + d.slice(6);
+    return '(' + d.slice(0, 2) + ') ' + d.slice(2, 7) + '-' + d.slice(7);
+  }
+  nform.elements.telefone.addEventListener('input', function (e) { e.target.value = maskPhone(e.target.value); });
+  $('new-lead').addEventListener('click', function () {
+    nform.reset();
+    $('n-err').textContent = '';
+    if (typeof ndlg.showModal === 'function') ndlg.showModal(); else ndlg.setAttribute('open', '');
+    setTimeout(function () { nform.elements.nome.focus(); }, 50);
+  });
+  function closeNew() { if (typeof ndlg.close === 'function') ndlg.close(); else ndlg.removeAttribute('open'); }
+  document.querySelectorAll('.js-close-new').forEach(function (b) { b.addEventListener('click', closeNew); });
+  ndlg.addEventListener('click', function (e) { if (e.target === ndlg) closeNew(); });
+  nform.addEventListener('submit', function (e) {
+    e.preventDefault();
+    var f = nform.elements;
+    var payload = {
+      nome: f.nome.value.trim(), telefone: f.telefone.value.trim(), email: f.email.value.trim(),
+      fonte: f.fonte.value, status: f.status.value, tipoPlano: f.tipoPlano.value, vidas: f.vidas.value, notas: f.notas.value
+    };
+    if (payload.nome.length < 2) { $('n-err').textContent = 'Informe o nome.'; return; }
+    if (payload.telefone.replace(/\D/g, '').length < 10) { $('n-err').textContent = 'Informe o telefone com DDD.'; return; }
+    var btn = nform.querySelector('button[type="submit"]');
+    btn.disabled = true;
+    api('/leads', { method: 'POST', body: JSON.stringify(payload) }).then(function (r) {
+      btn.disabled = false;
+      if (r._status === 401) { closeNew(); showLogin(); return; }
+      if (!r.ok) { $('n-err').textContent = r.error || 'Não foi possível salvar.'; return; }
+      r.lead.status = norm(r.lead.status);
+      state.leads.unshift(r.lead);
+      closeNew();
+      render();
+      toast('Lead cadastrado em "' + LABEL[r.lead.status] + '"');
+    });
   });
 
-  // Atualiza sozinho a cada 60s para mostrar leads novos
-  setInterval(function () { if (!$('app').hidden && document.visibilityState === 'visible') load(); }, 60000);
+  /* ---------- eventos ---------- */
+  document.querySelectorAll('.views__btn').forEach(function (b) {
+    b.addEventListener('click', function () {
+      state.view = b.dataset.view;
+      try { localStorage.setItem('fr_view', state.view); } catch (e) { /* ok */ }
+      render();
+    });
+  });
+  ['q', 'f-status', 'f-periodo'].forEach(function (id) { $(id).addEventListener('input', render); });
+
+  // Atualiza sozinho a cada 60s (sem atrapalhar quem está editando)
+  setInterval(function () {
+    if ($('app').hidden || document.visibilityState !== 'visible' || dlg.open || ndlg.open) return;
+    if (document.activeElement && /TEXTAREA|SELECT|INPUT/.test(document.activeElement.tagName)) return;
+    load();
+  }, 60000);
 
   load();
 })();

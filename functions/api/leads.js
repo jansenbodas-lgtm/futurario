@@ -47,7 +47,7 @@ export async function onRequestPost({ request, env }) {
     fbclid: clean(utm.fbclid, 200),
     pagina: clean(body.pagina, 300),
     referrer: clean(body.referrer, 300),
-    status: 'novo',
+    status: 'primeiro_contato',
     notas: '',
     ip,
     cidade: clean(request.cf && request.cf.city, 80),
