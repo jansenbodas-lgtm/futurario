@@ -46,7 +46,7 @@ Os leads ficam em `DATA_DIR/leads.json`. Use uma pasta/volume **persistente** e 
 
 | O que | Onde |
 |---|---|
-| Foto profissional da Carla (substituir `carla-jansen.jpg`/`.webp`, 600×700) | `public/img/` |
+| Foto profissional da Carla (substituir `carla-jansen.jpg`/`.webp`, 751×876) | `public/img/` |
 | Cores: azul #2B4C7F, azul profundo #0B386F, laranja #FE6E25 | `public/css/style.css` |
 | Logo (versão em alta resolução, PNG ou SVG) | `public/img/logo-futura-rio.png` |
 
