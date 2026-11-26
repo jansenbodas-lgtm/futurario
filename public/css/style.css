@@ -5,7 +5,7 @@
 :root {
   --brand: #2B4C7F;        /* azul Futura Rio (logo) */
   --brand-700: #0B386F;    /* azul profundo das artes */
-  --brand-900: #082A54;
+  --brand-900: #002961;   /* azul do logo */
   --brand-500: #237EF3;    /* azul vivo das artes */
   --accent: #FE6E25;       /* laranja Futura Rio */
   --accent-ink: #D4520E;   /* laranja para textos pequenos (contraste) */
@@ -82,8 +82,8 @@ button { font: inherit; cursor: pointer; }
 }
 .topbar__inner { display: flex; align-items: center; gap: 24px; height: 72px; }
 .brand { display: flex; align-items: center; gap: 10px; text-decoration: none; color: var(--brand); }
-.brand__logo { height: 50px; width: auto; border-radius: 8px; }
-.brand__logo--footer { height: 58px; }
+.brand__logo { height: 52px; width: auto; border-radius: 8px; }
+.brand__logo--footer { height: 76px; border-radius: 0; }
 .brand__text { display: flex; flex-direction: column; line-height: 1.1; }
 .brand__text strong { font-size: 1.15rem; font-weight: 800; }
 .brand__text small { font-size: .72rem; color: var(--muted); font-weight: 600; }
