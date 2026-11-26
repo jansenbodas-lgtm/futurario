@@ -161,6 +161,14 @@
     });
   });
 
+  /* Depoimentos: mostrar todos */
+  document.querySelectorAll('.js-more-reviews').forEach(function (b) {
+    b.addEventListener('click', function () {
+      var t = document.querySelector('.js-testimonials');
+      if (t) t.classList.add('is-open');
+    });
+  });
+
   /* Ano no rodapé */
   document.querySelectorAll('.js-year').forEach(function (el) { el.textContent = new Date().getFullYear(); });
 })();

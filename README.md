@@ -46,15 +46,15 @@ Os leads ficam em `DATA_DIR/leads.json`. Use uma pasta/volume **persistente** e 
 
 | O que | Onde |
 |---|---|
-| Foto da Carla (hero, "Sobre" e popup) | `public/img/` e os `src` com `carla-jansen.svg` em `public/index.html` |
-| Cores oficiais da Futura | variáveis no topo de `public/css/style.css` |
-| Logo | `public/img/favicon.svg` (ou troque pelo PNG/SVG oficial) |
-| Números (anos, vidas, empresas, operadoras) | `public/index.html`, procure `[X]` |
-| Depoimentos **reais** do Google | `public/index.html`, seção `#depoimentos` |
+| Foto profissional da Carla (substituir `carla-jansen.jpg`/`.webp`, 700×843) | `public/img/` |
+| Cores: azul #2B4C7F, azul profundo #0B386F, laranja #FE6E25 | `public/css/style.css` |
+| Logo (versão em alta resolução, PNG ou SVG) | `public/img/logo-futura-rio.png` |
+
+| Novos depoimentos do Google | `public/index.html`, seção `#depoimentos` |
 | Operadoras com que trabalha | `public/index.html`, seção `#operadoras` |
-| CNPJ e registro SUSEP | rodapé do `public/index.html` |
+| Registro SUSEP (CNPJ já incluído) | rodapé do `public/index.html` |
 | Domínio definitivo | `canonical`, `og:*`, JSON-LD, `robots.txt` e `sitemap.xml` (hoje `www.futurario.com.br`) |
-| Imagem de compartilhamento 1200×630 | `public/img/og-futura-rio.png` |
+
 | Meta Pixel / Google Ads / GA4 | bloco comentado no `<head>` do `public/index.html` |
 | Senha do painel | `.env`, `ADMIN_PASSWORD` |
 | HTTPS ativo | `COOKIE_SECURE=true` |

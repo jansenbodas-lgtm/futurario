@@ -14,7 +14,7 @@
   <link rel="canonical" href="https://www.futurario.com.br/">
   <meta name="geo.region" content="BR-RJ">
   <meta name="geo.placename" content="Rio de Janeiro">
-  <meta name="theme-color" content="#0B2D5B">
+  <meta name="theme-color" content="#2B4C7F">
 
   <!-- Open Graph / WhatsApp / Facebook -->
   <meta property="og:type" content="website">
@@ -23,10 +23,13 @@
   <meta property="og:title" content="Plano de Saúde no RJ com quem entende | Futura Rio · Carla Jansen">
   <meta property="og:description" content="Compare as principais operadoras e receba uma cotação gratuita em minutos. Atendimento consultivo do início ao pós-venda.">
   <meta property="og:url" content="https://www.futurario.com.br/">
-  <meta property="og:image" content="https://www.futurario.com.br/img/og-futura-rio.png">
+  <meta property="og:image" content="https://www.futurario.com.br/img/og-futura-rio.jpg">
+  <meta property="og:image:width" content="1080">
+  <meta property="og:image:height" content="1080">
   <meta name="twitter:card" content="summary_large_image">
 
   <link rel="icon" href="/img/favicon.svg" type="image/svg+xml">
+  <link rel="preload" as="image" href="/img/carla-jansen.webp" type="image/webp">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
@@ -43,10 +46,11 @@
         "name": "Futura Rio Corretora de Planos de Saúde e Odontológico",
         "alternateName": ["Futura Rio", "Carla Jansen Corretora de Planos de Saúde"],
         "url": "https://www.futurario.com.br/",
-        "logo": "https://www.futurario.com.br/img/favicon.svg",
-        "image": "https://www.futurario.com.br/img/carla-jansen.svg",
+        "logo": "https://www.futurario.com.br/img/logo-futura-rio.png",
+        "image": "https://www.futurario.com.br/img/carla-jansen.jpg",
         "telephone": "+55-21-98379-9691",
         "priceRange": "Cotação gratuita",
+        "taxID": "53.316.770/0001-04",
         "areaServed": [
           {"@type": "City", "name": "Rio de Janeiro"},
           {"@type": "City", "name": "Niterói"},
@@ -62,7 +66,8 @@
         "knowsAbout": ["Plano de saúde individual", "Plano de saúde familiar", "Plano de saúde empresarial", "Plano de saúde PME", "Plano de saúde MEI", "Plano odontológico", "Portabilidade de carência"],
         "sameAs": [
           "https://share.google/qLrVf0CDKbuTi5BND",
-          "https://share.google/HSJPT4exzV0yrm7Mx"
+          "https://share.google/HSJPT4exzV0yrm7Mx",
+          "https://www.instagram.com/futurariocorretora/"
         ]
       },
       {
@@ -72,7 +77,8 @@
         "jobTitle": "Corretora de Planos de Saúde",
         "worksFor": {"@id": "https://www.futurario.com.br/#corretora"},
         "telephone": "+55-21-98379-9691",
-        "image": "https://www.futurario.com.br/img/carla-jansen.svg"
+        "sameAs": ["https://www.instagram.com/futurariocorretora/"],
+        "image": "https://www.futurario.com.br/img/carla-jansen.jpg"
       },
       {
         "@type": "WebSite",
@@ -123,12 +129,8 @@
 <!-- ================= CABEÇALHO ================= -->
 <header class="topbar" id="topo">
   <div class="wrap topbar__inner">
-    <a href="#topo" class="brand" aria-label="Futura Rio Corretora - início">
-      <img src="/img/favicon.svg" alt="" width="40" height="40">
-      <span class="brand__text">
-        <strong>Futura Rio</strong>
-        <small>Corretora de Planos de Saúde</small>
-      </span>
+    <a href="#topo" class="brand" aria-label="Futura Rio Corretora de planos de saúde - início">
+      <img class="brand__logo" src="/img/logo-futura-rio.png" alt="Futura Rio Corretora de planos de saúde" width="476" height="126">
     </a>
     <nav class="nav" aria-label="Menu principal">
       <a href="#planos">Planos</a>
@@ -181,27 +183,27 @@
 
     <figure class="hero__photo">
       <div class="photo-frame">
-        <!-- TROCAR: coloque a foto da Carla em /public/img/carla-jansen.jpg (ou .webp) e ajuste o src -->
-        <img src="/img/carla-jansen.svg" alt="Carla Jansen, corretora de planos de saúde da Futura Rio no Rio de Janeiro" width="520" height="620" fetchpriority="high">
+        <picture>
+          <source srcset="/img/carla-jansen.webp" type="image/webp">
+          <img src="/img/carla-jansen.jpg" alt="Carla Jansen, corretora de planos de saúde da Futura Rio no Rio de Janeiro" width="700" height="843" fetchpriority="high">
+        </picture>
       </div>
       <figcaption class="badge-card">
         <strong>Carla Jansen</strong>
         <span>Corretora responsável · Futura Rio</span>
         <a href="https://share.google/HSJPT4exzV0yrm7Mx" target="_blank" rel="noopener" class="badge-card__google">
-          <svg aria-hidden="true" viewBox="0 0 24 24" width="16" height="16"><use href="#i-star"/></svg>
-          Avaliada pelos clientes no Google
+          <span class="stars5">★★★★★</span> Avaliações 5 estrelas no Google
         </a>
       </figcaption>
     </figure>
   </div>
 
-  <!-- Números de confiança: TROCAR pelos números reais -->
   <div class="wrap">
-    <ul class="stats" aria-label="Números da corretora">
-      <li><strong>+[X] anos</strong><span>de experiência em saúde suplementar</span></li>
-      <li><strong>+[X] vidas</strong><span>protegidas com planos de saúde</span></li>
-      <li><strong>+[X] empresas</strong><span>atendidas com planos PME</span></li>
-      <li><strong>[X] operadoras</strong><span>comparadas em cada cotação</span></li>
+    <ul class="stats" aria-label="Diferenciais da corretora">
+      <li><strong>+10 anos</strong><span>de experiência cuidando da saúde de famílias e empresas</span></li>
+      <li><strong>5 estrelas</strong><span>nas avaliações de clientes no Google</span></li>
+      <li><strong>+12 operadoras</strong><span>comparadas lado a lado em cada cotação</span></li>
+      <li><strong>R$ 0</strong><span>pela consultoria: você paga o valor da operadora</span></li>
     </ul>
   </div>
 </section>
@@ -287,15 +289,16 @@
 <section class="sobre" id="sobre" aria-labelledby="t-sobre">
   <div class="wrap sobre__grid">
     <figure class="sobre__photo">
-      <!-- TROCAR: segunda foto da Carla (atendendo um cliente, no escritório etc.) -->
-      <img src="/img/carla-jansen.svg" alt="Carla Jansen atendendo clientes da Futura Rio Corretora" width="480" height="560" loading="lazy">
+      <picture>
+        <source srcset="/img/carla-jansen.webp" type="image/webp">
+        <img src="/img/carla-jansen.jpg" alt="Carla Jansen, corretora responsável pela Futura Rio Corretora de planos de saúde" width="700" height="843" loading="lazy">
+      </picture>
     </figure>
     <div class="sobre__copy">
       <p class="eyebrow">Quem cuida do seu plano</p>
       <h2 id="t-sobre" class="section-title">Carla Jansen, corretora de planos de saúde no Rio de Janeiro</h2>
-      <!-- TROCAR: ajuste o texto com a trajetória real da Carla -->
       <p>
-        Há <strong>[X] anos</strong> ajudo famílias, profissionais autônomos e empresas do Rio de Janeiro a escolher o
+        Há <strong>mais de 10 anos</strong> ajudo famílias, profissionais autônomos e empresas do Rio de Janeiro a escolher o
         plano de saúde certo. Na <strong>Futura Rio</strong>, meu trabalho começa entendendo a sua rotina: quais
         médicos você não quer perder, quais hospitais ficam perto, quanto pode investir por mês.
       </p>
@@ -303,6 +306,10 @@
         Com isso, comparo as operadoras de forma transparente, explico carências, coparticipação e reajustes
         sem letras miúdas e acompanho você depois da contratação: inclusão de dependentes, autorizações,
         reembolsos e renovações.
+      </p>
+      <p>
+        Muitos clientes estão comigo há uma década, e é dessa confiança que nasceu a
+        <strong>Futura Rio Corretora de Planos de Saúde e Odontológico</strong>.
       </p>
       <ul class="pillars">
         <li>
@@ -351,8 +358,6 @@
 </section>
 
 <!-- ================= DEPOIMENTOS ================= -->
-<!-- TROCAR: copie depoimentos REAIS das fichas do Google (com autorização) para os cards abaixo.
-     Não publique depoimentos inventados: além de ilegal (CDC), o Google e a Meta penalizam. -->
 <section class="depoimentos" id="depoimentos" aria-labelledby="t-depo">
   <div class="wrap">
     <p class="eyebrow eyebrow--center">Quem já contratou recomenda</p>
@@ -360,44 +365,96 @@
 
     <div class="google-proof">
       <span class="google-proof__stars" aria-hidden="true">★★★★★</span>
-      <span>Avaliações reais de clientes no Google</span>
+      <span>Avaliações 5 estrelas de clientes reais no Google</span>
       <a href="https://share.google/qLrVf0CDKbuTi5BND" target="_blank" rel="noopener">Futura Rio</a>
       <a href="https://share.google/HSJPT4exzV0yrm7Mx" target="_blank" rel="noopener">Carla Jansen</a>
     </div>
 
-    <div class="testimonials">
+    <div class="testimonials js-testimonials">
       <figure class="tcard">
         <div class="tcard__stars" aria-label="5 de 5 estrelas">★★★★★</div>
-        <blockquote>“[Cole aqui o texto de uma avaliação real do Google.]”</blockquote>
-        <figcaption><span class="avatar">A</span><span><strong>[Nome do cliente]</strong><small>[Bairro] · Avaliação no Google</small></span></figcaption>
+        <blockquote>“A Corretora da Carla Jansen é a melhor que tem, profissional super honesta. Já estou com a Carla mais de 10 anos e a confiança é 1.000% de olhos fechados 😍 Corretora de confiança!”</blockquote>
+        <figcaption><span class="avatar">J</span><span><strong>Jaqueline Araujo Sobreira</strong><small>Local Guide · Google · ago. 2025</small></span></figcaption>
       </figure>
       <figure class="tcard">
         <div class="tcard__stars" aria-label="5 de 5 estrelas">★★★★★</div>
-        <blockquote>“[Cole aqui o texto de uma avaliação real do Google.]”</blockquote>
-        <figcaption><span class="avatar">B</span><span><strong>[Nome do cliente]</strong><small>[Empresa / bairro] · Avaliação no Google</small></span></figcaption>
+        <blockquote>“A Carla é uma profissional extremamente competente, solícita e atenciosa. Desde o primeiro contato, demonstrou muita dedicação em entender o que eu estava buscando e me apresentou opções que se alinhavam perfeitamente com as minhas expectativas. Além de esclarecer todas as minhas dúvidas com muita paciência e clareza. Recomendo fortemente a Carla a todos que precisam de uma corretora. Foi uma experiência excelente.”</blockquote>
+        <figcaption><span class="avatar">G</span><span><strong>Giselle Crz</strong><small>Avaliação no Google</small></span></figcaption>
       </figure>
       <figure class="tcard">
         <div class="tcard__stars" aria-label="5 de 5 estrelas">★★★★★</div>
-        <blockquote>“[Cole aqui o texto de uma avaliação real do Google.]”</blockquote>
-        <figcaption><span class="avatar">C</span><span><strong>[Nome do cliente]</strong><small>[Bairro] · Avaliação no Google</small></span></figcaption>
+        <blockquote>“Vindo aqui agradecer a Carla pelo auxílio na hora de escolher meu plano de saúde. Não sabia nada e ela me guiou passo a passo, me lembrando de prazos e me enviando tudo que eu precisava para conseguir escolher e fechar o plano ideal para mim nesse momento. Muito solícita e atenciosa. Obrigada!!!!!”</blockquote>
+        <figcaption><span class="avatar">J</span><span><strong>Jessica Araujo</strong><small>Google · ago. 2025</small></span></figcaption>
+      </figure>
+      <figure class="tcard">
+        <div class="tcard__stars" aria-label="5 de 5 estrelas">★★★★★</div>
+        <blockquote>“Carla é a melhor corretora que já tivemos. Somos fiéis a ela há aproximadamente 10 anos. Obrigada pelo excelente trabalho e profissionalismo. A sociedade agradece!!!”</blockquote>
+        <figcaption><span class="avatar">D</span><span><strong>Débora Herthal</strong><small>Google · ago. 2023</small></span></figcaption>
+      </figure>
+      <figure class="tcard">
+        <div class="tcard__stars" aria-label="5 de 5 estrelas">★★★★★</div>
+        <blockquote>“Compreendeu minha situação que demandava de urgência e agilidade, e tratou como se fosse urgência dela. Sempre muito paciente, empática e solícita. Grande profissional.”</blockquote>
+        <figcaption><span class="avatar">V</span><span><strong>Victor Costa</strong><small>Google · out. 2025</small></span></figcaption>
+      </figure>
+      <figure class="tcard">
+        <div class="tcard__stars" aria-label="5 de 5 estrelas">★★★★★</div>
+        <blockquote>“Encontrei a corretora Carla aqui pelas excelentes avaliações que fizeram dela ❤️ E realmente condiz com a realidade, estamos muito satisfeitos com o trabalho da Carla Jansen ❤️. Os planos de saúde foram nota 10000…000 em rapidez e muita satisfação 🥰. Recomendo! Muito obrigada por tudo, Carla ❤️”</blockquote>
+        <figcaption><span class="avatar">M</span><span><strong>Marcia Baião de Andrade e Silva</strong><small>Google · nov. 2023</small></span></figcaption>
+      </figure>
+      <figure class="tcard tcard--extra">
+        <div class="tcard__stars" aria-label="5 de 5 estrelas">★★★★★</div>
+        <blockquote>“Fui muito bem atendido. Quando tive dificuldades, recebi retornos muito rápidos e precisos. Fui muito bem orientado e suportado nos momentos necessários. Só tenho a agradecer.”</blockquote>
+        <figcaption><span class="avatar">F</span><span><strong>fabio77pop</strong><small>Avaliação no Google</small></span></figcaption>
+      </figure>
+      <figure class="tcard tcard--extra">
+        <div class="tcard__stars" aria-label="5 de 5 estrelas">★★★★★</div>
+        <blockquote>“Profissional muito atenciosa e competente! Indico de olhos fechados.”</blockquote>
+        <figcaption><span class="avatar">A</span><span><strong>Andrea Gil</strong><small>Avaliação no Google</small></span></figcaption>
+      </figure>
+      <figure class="tcard tcard--extra">
+        <div class="tcard__stars" aria-label="5 de 5 estrelas">★★★★★</div>
+        <blockquote>“Muito bem atendida, muito atenciosa, tirou todas as minhas dúvidas, e sempre que tenho dúvidas a chamo, ela me atende.”</blockquote>
+        <figcaption><span class="avatar">A</span><span><strong>Aline Magalhães</strong><small>Avaliação no Google</small></span></figcaption>
+      </figure>
+      <figure class="tcard tcard--extra">
+        <div class="tcard__stars" aria-label="5 de 5 estrelas">★★★★★</div>
+        <blockquote>“Muito atenciosa e ficou até eu fechar dando assistência e mostrando o que tinha de opções… Super recomendo! Nota 10. As 5 estrelas me levaram a procurá-la e tive a certeza de que são 5 estrelas reais.”</blockquote>
+        <figcaption><span class="avatar">M</span><span><strong>Marcus Teixeira</strong><small>Local Guide · Avaliação no Google</small></span></figcaption>
+      </figure>
+      <figure class="tcard tcard--extra">
+        <div class="tcard__stars" aria-label="5 de 5 estrelas">★★★★★</div>
+        <blockquote>“Muito educada e gentil! Sempre tirando minhas dúvidas.”</blockquote>
+        <figcaption><span class="avatar">L</span><span><strong>Larissa Rodrigues</strong><small>Avaliação no Google</small></span></figcaption>
+      </figure>
+      <figure class="tcard tcard--extra">
+        <div class="tcard__stars" aria-label="5 de 5 estrelas">★★★★★</div>
+        <blockquote>“Ótimo atendimento. Sempre atenciosa e solícita.”</blockquote>
+        <figcaption><span class="avatar">E</span><span><strong>Eliani Lima da Cruz</strong><small>Avaliação no Google</small></span></figcaption>
       </figure>
     </div>
+    <p class="depo-cta">
+      <button type="button" class="btn btn--ghost js-more-reviews">Ver mais avaliações</button>
+      <a href="https://share.google/HSJPT4exzV0yrm7Mx" target="_blank" rel="noopener">Ver todas no Google →</a>
+    </p>
   </div>
 </section>
 
 <!-- ================= POR QUE CORRETORA ================= -->
 <section class="porque" aria-labelledby="t-porque">
   <div class="wrap porque__grid">
+    <figure class="porque__img">
+      <img src="/img/familias.webp" alt="Futura Rio: planos de saúde para amor de todos os tamanhos" width="720" height="720" loading="lazy">
+    </figure>
     <div>
       <h2 id="t-porque" class="section-title section-title--light">Por que contratar seu plano de saúde com uma corretora?</h2>
       <p class="section-sub section-sub--light">Contratar direto ou com a Futura Rio custa o mesmo. A diferença está no que você ganha.</p>
-    </div>
     <ul class="vs">
       <li><strong>Comparação imparcial</strong> entre várias operadoras, não só uma.</li>
       <li><strong>Economia</strong> ao escolher a categoria e a coparticipação certas para o seu uso.</li>
       <li><strong>Sem surpresas</strong> com carências, reajustes e rede credenciada.</li>
       <li><strong>Suporte contínuo</strong> para autorizações, reembolsos e inclusões.</li>
     </ul>
+    </div>
   </div>
 </section>
 
@@ -498,9 +555,8 @@
 <footer class="footer">
   <div class="wrap footer__grid">
     <div>
-      <a href="#topo" class="brand brand--light">
-        <img src="/img/favicon.svg" alt="" width="36" height="36">
-        <span class="brand__text"><strong>Futura Rio</strong><small>Corretora de Planos de Saúde e Odontológico</small></span>
+      <a href="#topo" class="brand">
+        <img class="brand__logo brand__logo--footer" src="/img/logo-futura-rio.png" alt="Futura Rio Corretora de planos de saúde" width="476" height="126" loading="lazy">
       </a>
       <p>Consultoria em planos de saúde e odontológicos para pessoas, famílias e empresas no Rio de Janeiro.</p>
     </div>
@@ -508,13 +564,14 @@
       <h4>Contato</h4>
       <p><button class="link-btn link-btn--light js-open-lead" data-origem="rodape">WhatsApp: (21) 98379-9691</button></p>
       <p>Rio de Janeiro · RJ</p>
+      <p><a href="https://www.instagram.com/futurariocorretora/" target="_blank" rel="noopener">Instagram @futurariocorretora</a></p>
       <p><a href="https://share.google/qLrVf0CDKbuTi5BND" target="_blank" rel="noopener">Futura Rio no Google</a> ·
          <a href="https://share.google/HSJPT4exzV0yrm7Mx" target="_blank" rel="noopener">Carla Jansen no Google</a></p>
     </div>
     <div>
       <h4>Dados da corretora</h4>
-      <!-- TROCAR: preencha com os dados oficiais (aumenta muito a credibilidade) -->
-      <p>CNPJ: [00.000.000/0000-00]<br>Registro SUSEP: [000000000]</p>
+      <p>Futura Rio Corretora de Planos de Saúde e Odontológico<br>CNPJ: 53.316.770/0001-04<br>Corretora responsável: Carla Jansen</p>
+      <!-- Quando tiver o número, acrescente aqui: Registro SUSEP: 000000000 -->
       <p class="small">A Futura Rio é uma corretora independente. Preços, coberturas e rede credenciada são definidos pelas operadoras e podem variar conforme idade, região e produto. Planos registrados na ANS.</p>
     </div>
   </div>
@@ -535,7 +592,7 @@
   <form class="lead-form lead-form--modal js-lead-form" data-origem="popup-whatsapp" novalidate>
     <button type="button" class="modal__close js-close-lead" aria-label="Fechar">×</button>
     <div class="modal__head">
-      <img src="/img/carla-jansen.svg" alt="" width="56" height="56" class="modal__avatar">
+      <img src="/img/carla-jansen-avatar.webp" alt="Carla Jansen" width="56" height="56" class="modal__avatar">
       <div>
         <h3 id="modal-title">Fale com a Carla no WhatsApp</h3>
         <p>Deixe seus dados para eu já preparar sua cotação.</p>
