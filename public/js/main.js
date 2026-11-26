@@ -85,7 +85,7 @@
         if (window.fbq) window.fbq('track', 'Lead', data || {});
         if (window.gtag) window.gtag('event', 'generate_lead', data || {});
       } else {
-        if (window.fbq) window.fbq('trackCustom', evt, data || {});
+        if (window.fbq) window.fbq(evt === 'OpenLeadForm' ? 'track' : 'trackCustom', evt === 'OpenLeadForm' ? 'Contact' : evt, data || {});
         if (window.gtag) window.gtag('event', evt, data || {});
       }
       if (window.dataLayer) window.dataLayer.push(Object.assign({ event: evt }, data || {}));
