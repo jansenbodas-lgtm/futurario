@@ -8,9 +8,33 @@ Landing page da **Futura Rio Corretora de Planos de Saúde e Odontológico** (co
 - Origem de cada lead registrada: `utm_source`, `utm_campaign`, `gclid` (Google Ads) e `fbclid` (Meta Ads). Assim você sabe qual campanha gerou cada contato.
 - SEO: title e description otimizados, dados estruturados (InsuranceAgency, Person, FAQPage), seção de perguntas frequentes, seção de bairros atendidos, `robots.txt` e `sitemap.xml`.
 - Evento **Lead** disparado no Meta Pixel e no Google Ads/GA4 quando os códigos estiverem instalados.
-- Servidor Node.js **sem dependências**: roda em qualquer VPS, Render, Railway, Fly.io ou Docker.
+- Roda no **Cloudflare Pages** (Functions + KV) ou em servidor Node.js **sem dependências** (VPS, Render, Railway, Docker).
 
-## Rodar
+## Publicar no Cloudflare Pages (recomendado)
+
+O projeto já vem pronto para o Cloudflare Pages: a página fica em `public/`, a API em `functions/` e os leads no **Workers KV**.
+
+1. **Workers & Pages → KV → Create namespace** com o nome `futura-rio-leads`.
+2. No projeto Pages, em **Settings → Build**:
+   - Framework preset: **None**
+   - Build command: *(deixe vazio)*
+   - Build output directory: **`public`**
+   - Production branch: o branch onde está o código (hoje `claude/hopeful-fermi-8yawx3`; troque para `main` quando o código for juntado nele)
+3. **Settings → Bindings → Add → KV namespace**: Variable name **`LEADS`**, namespace `futura-rio-leads` (em Production e Preview).
+4. **Settings → Variables and Secrets** (tipo *Secret*):
+   - `ADMIN_PASSWORD`: senha do painel
+   - `SESSION_SECRET`: texto aleatório longo
+5. **Deployments → Retry deployment** (ou faça um novo push).
+
+Painel: `https://SEU-DOMINIO/admin`.
+
+Teste local com o simulador do Cloudflare:
+
+```bash
+npx wrangler pages dev public --kv LEADS --binding ADMIN_PASSWORD=teste --binding SESSION_SECRET=abc
+```
+
+## Rodar em servidor Node (VPS, Render, Railway, Docker)
 
 ```bash
 cp .env.example .env     # defina ADMIN_PASSWORD e SESSION_SECRET

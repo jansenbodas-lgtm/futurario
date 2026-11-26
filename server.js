@@ -24,7 +24,7 @@ const SESSION_SECRET = process.env.SESSION_SECRET || crypto.randomBytes(32).toSt
 const DATA_DIR = path.resolve(process.env.DATA_DIR || path.join(__dirname, 'data'));
 const COOKIE_SECURE = process.env.COOKIE_SECURE === 'true';
 const PUBLIC_DIR = path.join(__dirname, 'public');
-const ADMIN_DIR = path.join(__dirname, 'admin');
+const ADMIN_DIR = path.join(PUBLIC_DIR, 'admin');
 const LEADS_FILE = path.join(DATA_DIR, 'leads.json');
 const SESSION_TTL_MS = 1000 * 60 * 60 * 12; // 12h
 
