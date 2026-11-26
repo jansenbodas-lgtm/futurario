@@ -19,7 +19,7 @@ O projeto já vem pronto para o Cloudflare Pages: a página fica em `public/`, a
    - Framework preset: **None**
    - Build command: *(deixe vazio)*
    - Build output directory: **`public`**
-   - Production branch: o branch onde está o código (hoje `claude/hopeful-fermi-8yawx3`; troque para `main` quando o código for juntado nele)
+   - Production branch: **`main`**
 3. **Settings → Bindings → Add → KV namespace**: Variable name **`LEADS`**, namespace `futura-rio-leads` (em Production e Preview).
 4. **Settings → Variables and Secrets** (tipo *Secret*):
    - `ADMIN_PASSWORD`: senha do painel
