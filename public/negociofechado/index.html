@@ -7,7 +7,7 @@
   <title>Negócio Fechado · Futura Rio</title>
   <link rel="icon" href="/img/favicon.svg" type="image/svg+xml">
   <link rel="stylesheet" href="/admin/admin.css?v=2026-11-26f">
-  <link rel="stylesheet" href="/negociofechado/fin.css?v=2026-11-26f">
+  <link rel="stylesheet" href="/negociofechado/fin.css?v=2026-11-27">
 </head>
 <body>
 
@@ -121,6 +121,12 @@
       <label>Situação<select name="status"><option value="ativo">Ativo</option><option value="cancelado">Cancelado</option></select></label>
       <label>Data de cancelamento<input name="canceladoEm" type="date"></label>
     </div>
+    <div class="vit client">
+      <div class="benef__head"><strong>Vitalício</strong><span class="benef__count" id="c-vit-rule"></span></div>
+      <p class="hint">Quando o valor do vitalício mudar (reajuste, inclusão ou saída de vidas), lance o novo valor e o mês. A previsão usa o valor mais recente.</p>
+      <div class="vit__rows" id="c-vit-rows"></div>
+      <button type="button" class="btn btn--ghost benef__add" id="c-vit-add">+ Alterar valor a partir de um mês</button>
+    </div>
     <label>Observações<textarea name="notas" rows="2"></textarea></label>
     <div class="preview" id="c-preview"></div>
     <p class="err" id="c-err" role="alert"></p>
@@ -138,6 +144,7 @@
     <h2 id="p-title">Recebimento</h2>
     <p class="sheet__date" id="p-sub"></p>
     <label>Valor recebido (R$)<input name="valor" inputmode="decimal" placeholder="Deixe em branco para usar o valor previsto"></label>
+    <label class="consent" id="p-vit-wrap" hidden><input type="checkbox" id="p-vit"> <span id="p-vit-label">Usar este valor como novo vitalício</span></label>
     <div class="sheet__actions">
       <button type="button" class="btn btn--danger" id="p-undo">Desmarcar</button>
       <button type="submit" class="btn btn--primary btn--auto">Marcar como recebido</button>
@@ -166,6 +173,6 @@
 
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
 <script src="/admin/benef.js?v=2026-11-26f" defer></script>
-<script src="/negociofechado/fin.js?v=2026-11-27" defer></script>
+<script src="/negociofechado/fin.js?v=2026-11-27b" defer></script>
 </body>
 </html>

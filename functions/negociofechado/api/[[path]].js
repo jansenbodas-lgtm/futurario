@@ -23,6 +23,16 @@ function applyContractPatch(c, body) {
     c.aniversario = v;
   }
   if (body.beneficiarios !== undefined) c.beneficiarios = sanitizeBenef(body.beneficiarios);
+  if (body.vitalicioAjustes !== undefined) {
+    const list = Array.isArray(body.vitalicioAjustes) ? body.vitalicioAjustes : [];
+    const byMonth = {};
+    list.slice(0, 120).forEach((x) => {
+      const desde = clean(x && x.desde, 7);
+      if (!MONTH_RE.test(desde)) return;
+      byMonth[desde] = parseBRL(x.valor);
+    });
+    c.vitalicioAjustes = Object.keys(byMonth).sort().map((desde) => ({ desde, valor: byMonth[desde] }));
+  }
   if (body.status !== undefined) c.status = body.status === 'cancelado' ? 'cancelado' : 'ativo';
   if (body.canceladoEm !== undefined) {
     const v = clean(body.canceladoEm, 10);

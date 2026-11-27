@@ -63,22 +63,33 @@
   /* ---------- regra de comissão ---------- */
   function ruleOf(c) { var t = state.regras[c.tipoPessoa] || {}; return t[c.operadora] || null; }
   function problemOf(c) {
-    if (!c.valor) return 'sem valor mensal';
+    var hasAdj = (c.vitalicioAjustes || []).length > 0;
+    if (!c.valor && !hasAdj) return 'sem valor mensal';
     if (!c.vigencia) return 'sem data de vigência';
     if (!c.operadora) return 'sem operadora';
-    if (!ruleOf(c)) return 'sem regra de comissão para ' + c.operadora + ' ' + c.tipoPessoa;
+    if (!ruleOf(c) && !hasAdj) return 'sem regra de comissão para ' + c.operadora + ' ' + c.tipoPessoa;
     return '';
   }
-  /** Comissão prevista de um contrato num mês: {v, kind:'p'|'v', n} ou null */
-  function amountAt(c, mi) {
+  /** Valor do vitalício num mês: última alteração manual até o mês, senão regra (valor × %) */
+  function vitAt(c, mi) {
+    var adj = null;
+    (c.vitalicioAjustes || []).forEach(function (a) { if (idxOf(a.desde) <= mi) adj = a; });
+    if (adj) return { v: adj.valor, manual: true, desde: adj.desde };
     var r = ruleOf(c);
-    if (!r || !c.valor || !c.vigencia) return null;
+    if (r && r.vitalicio > 0 && c.valor) return { v: c.valor * r.vitalicio / 100, manual: false };
+    return null;
+  }
+  /** Comissão prevista de um contrato num mês: {v, kind:'p'|'v', n, manual} ou null */
+  function amountAt(c, mi) {
+    var r = ruleOf(c), hasAdj = (c.vitalicioAjustes || []).length > 0;
+    if ((!r && !hasAdj) || !c.vigencia) return null;
+    var parc = r ? r.parcelas : [];
     var n = mi - idxOf(c.vigencia);
     if (n < 0) return null;
     if (c.status === 'cancelado' && c.canceladoEm && mi >= idxOf(c.canceladoEm)) return null;
-    if (n < r.parcelas.length) return { v: c.valor * r.parcelas[n] / 100, kind: 'p', n: n + 1 };
-    if (r.vitalicio > 0) return { v: c.valor * r.vitalicio / 100, kind: 'v' };
-    return null;
+    if (n < parc.length) return c.valor ? { v: c.valor * parc[n] / 100, kind: 'p', n: n + 1 } : null;
+    var vt = vitAt(c, mi);
+    return vt && vt.v > 0 ? { v: vt.v, kind: 'v', manual: vt.manual } : null;
   }
 
   /* ---------- login ---------- */
@@ -169,7 +180,7 @@
   function renderKpis(list) {
     var n0 = nowIdx();
     var vitRec = 0;
-    list.forEach(function (c) { var r = ruleOf(c); if (c.status === 'ativo' && r && r.vitalicio && c.valor) vitRec += c.valor * r.vitalicio / 100; });
+    list.forEach(function (c) { if (c.status !== 'ativo') return; var a = amountAt(c, n0); if (a && a.kind === 'v') vitRec += a.v; });
     var recebido = 0;
     list.forEach(function (c) {
       var pg = c.pagamentos && c.pagamentos[ymOf(n0)];
@@ -295,7 +306,7 @@
           var val = pg && pg.recebido && pg.valor != null ? pg.valor : (a ? a.v : 0);
           var b = el('button', { type: 'button', class: 'cell' + (pg && pg.recebido ? ' is-paid' : (mi < n0 ? ' is-late' : '')),
             title: (pg && pg.recebido ? 'Recebido' : (mi < n0 ? 'Não marcado como recebido' : 'Previsto')) + ' · clique para alterar' }, [
-            a ? el('span', { class: 'k k--' + a.kind, text: a.kind === 'p' ? 'P' + a.n : 'V' }) : null,
+            a ? el('span', { class: 'k k--' + a.kind, text: a.kind === 'p' ? 'P' + a.n : (a.manual ? 'V✎' : 'V') }) : null,
             el('span', { text: money(val) })
           ]);
           b.addEventListener('click', function () { openPay(c, mi, a); });
@@ -320,12 +331,22 @@
     $('p-sub').textContent = c.nome + ' · ' + labelOf(mi) + (a ? ' · previsto ' + money(a.v) + (a.kind === 'p' ? ' (parcela ' + a.n + ')' : ' (vitalício)') : '');
     $('p-form').elements.valor.value = pg && pg.valor != null ? String(pg.valor).replace('.', ',') : '';
     $('p-undo').hidden = !(pg && pg.recebido);
+    var isV = a && a.kind === 'v';
+    $('p-vit-wrap').hidden = !isV;
+    $('p-vit').checked = false;
+    $('p-vit-label').textContent = 'Usar este valor como novo vitalício a partir de ' + labelOf(mi);
     openDlg(pdlg);
   }
   function savePay(recebido) {
     var p = state.pay; if (!p) return;
     var v = $('p-form').elements.valor.value.trim();
-    api('/contratos/' + p.c.id, { method: 'PATCH', body: JSON.stringify({ pagamento: { mes: ymOf(p.mi), recebido: recebido, valor: v } }) }).then(function (r) {
+    var body = { pagamento: { mes: ymOf(p.mi), recebido: recebido, valor: v } };
+    if (recebido && v && !$('p-vit-wrap').hidden && $('p-vit').checked) {
+      var adj = (p.c.vitalicioAjustes || []).filter(function (x) { return x.desde !== ymOf(p.mi); });
+      adj.push({ desde: ymOf(p.mi), valor: parseBRL(v) });
+      body.vitalicioAjustes = adj;
+    }
+    api('/contratos/' + p.c.id, { method: 'PATCH', body: JSON.stringify(body) }).then(function (r) {
       if (r._status === 401) { closeDlg(pdlg); showLogin(); return; }
       if (!r.ok) return toast(r.error || 'Erro ao salvar');
       Object.assign(p.c, r.contrato); closeDlg(pdlg); render();
@@ -345,6 +366,7 @@
     ['nome', 'telefone', 'email', 'aniversario', 'produto', 'vidas', 'vigencia', 'canceladoEm', 'notas'].forEach(function (k) { f[k].value = (c && c[k]) || ''; });
     f.tipoPessoa.value = (c && c.tipoPessoa) || 'PJ';
     state.benefEd = window.FRBenef.editor($('c-benef'), (c && c.beneficiarios) || []);
+    vitEditor((c && c.vitalicioAjustes) || []);
     if (c && c.operadora && !Array.prototype.some.call(f.operadora.options, function (o) { return o.value === c.operadora; })) {
       f.operadora.appendChild(el('option', { value: c.operadora, text: c.operadora }));
     }
@@ -361,23 +383,55 @@
     return { nome: f.nome.value.trim(), telefone: f.telefone.value.trim(), email: f.email.value.trim(), aniversario: f.aniversario.value, tipoPessoa: f.tipoPessoa.value, operadora: f.operadora.value,
       produto: f.produto.value.trim(), vidas: f.vidas.value.trim(), valor: parseBRL(f.valor.value), vigencia: f.vigencia.value,
       beneficiarios: state.benefEd ? state.benefEd.get() : [],
+      vitalicioAjustes: vitGet(),
       status: f.status.value, canceladoEm: f.status.value === 'cancelado' ? f.canceladoEm.value : '', notas: f.notas.value };
   }
   function preview() {
     var d = formContract(), box = $('c-preview'); box.textContent = '';
     var r = (state.regras[d.tipoPessoa] || {})[d.operadora];
     if (!d.operadora) return;
-    if (!r) { box.appendChild(el('span', { text: '⚠ Não há regra de comissão para ' + d.operadora + ' ' + d.tipoPessoa + '. Cadastre em “Regras de comissão”.' })); return; }
+    if (!r && !(d.vitalicioAjustes || []).length) { box.appendChild(el('span', { text: '⚠ Não há regra de comissão para ' + d.operadora + ' ' + d.tipoPessoa + '. Cadastre em “Regras de comissão” ou lance o vitalício abaixo.' })); return; }
+    r = r || { parcelas: [], vitalicio: 0 };
     if (!d.valor || !d.vigencia) { box.appendChild(el('span', { text: 'Regra: ' + ruleText(r) + '. Preencha valor e vigência para ver a previsão.' })); return; }
     var start = idxOf(d.vigencia), ol = el('ol');
     var tmp = Object.assign({}, d);
-    for (var i = 0; i < Math.min(r.parcelas.length + 3, 12); i++) {
-      var a = amountAt(tmp, start + i);
-      ol.appendChild(el('li', { text: labelOf(start + i) + ': ' + (a ? money(a.v) + (a.kind === 'p' ? ' (' + pct(r.parcelas[i]) + '%)' : ' (vitalício ' + pct(r.vitalicio) + '%)') : '—') }));
+    var s0 = Math.max(start, nowIdx() - 1);
+    for (var k = 0; k < 8; k++) {
+      var mi = s0 + k, i = mi - start, a = amountAt(tmp, mi);
+      ol.appendChild(el('li', { text: labelOf(mi) + ': ' + (a ? money(a.v) + (a.kind === 'p' ? ' (' + pct(r.parcelas[i]) + '%)' : (a.manual ? ' (vitalício editado)' : ' (vitalício ' + pct(r.vitalicio) + '%)')) : '—') }));
     }
     box.appendChild(el('strong', { text: 'Previsão de recebimento' }));
     box.appendChild(ol);
   }
+  /* Editor das alterações de valor do vitalício */
+  function vitRuleText() {
+    var f = cform.elements, r = (state.regras[f.tipoPessoa.value] || {})[f.operadora.value], v = parseBRL(f.valor.value);
+    if (!r || !r.vitalicio) return 'Pela regra: sem vitalício para esta operadora/tipo. Você pode lançar um valor abaixo.';
+    return 'Pela regra: ' + pct(r.vitalicio) + '% de ' + money(v) + ' = ' + money(v * r.vitalicio / 100) + '/mês (depois das parcelas).';
+  }
+  function vitRow(a) {
+    var m = el('input', { type: 'month', 'aria-label': 'A partir de', value: (a && a.desde) || ymOf(nowIdx()) });
+    var v = el('input', { inputmode: 'decimal', 'aria-label': 'Valor do vitalício', placeholder: 'R$ 0,00', value: a && a.valor != null ? String(Number(a.valor).toFixed(2)).replace('.', ',') : '' });
+    var rm = el('button', { type: 'button', class: 'benef__rm', 'aria-label': 'Remover alteração', text: '×' });
+    var row = el('div', { class: 'vit__row' }, [el('span', { class: 'vit__lbl', text: 'A partir de' }), m, el('span', { class: 'vit__lbl', text: 'R$' }), v, rm]);
+    rm.addEventListener('click', function () { row.remove(); preview(); });
+    $('c-vit-rows').appendChild(row);
+    return v;
+  }
+  function vitEditor(list) {
+    $('c-vit-rows').textContent = '';
+    list.forEach(vitRow);
+    $('c-vit-rule').textContent = vitRuleText();
+  }
+  function vitGet() {
+    return Array.prototype.map.call($('c-vit-rows').children, function (r) {
+      var i = r.querySelectorAll('input');
+      return { desde: i[0].value, valor: parseBRL(i[1].value) };
+    }).filter(function (a) { return /^\d{4}-\d{2}$/.test(a.desde) && a.valor > 0; });
+  }
+  $('c-vit-add').addEventListener('click', function () { vitRow(null).focus(); });
+
+  cform.addEventListener('input', function () { $('c-vit-rule').textContent = vitRuleText(); });
   cform.addEventListener('input', preview);
   cform.addEventListener('change', preview);
   cform.addEventListener('submit', function (e) {
