@@ -104,6 +104,9 @@
   }
   function fillOps() {
     var sel = $('f-op');
+    state.contratos.forEach(function (c) {
+      if (c.operadora && state.operadoras.indexOf(c.operadora) === -1) state.operadoras.splice(state.operadoras.length - 1, 0, c.operadora);
+    });
     if (sel.options.length > 1) return;
     state.operadoras.forEach(function (o) { sel.appendChild(el('option', { value: o, text: o })); });
     var cop = $('c-op');
@@ -342,6 +345,9 @@
     ['nome', 'telefone', 'email', 'aniversario', 'produto', 'vidas', 'vigencia', 'canceladoEm', 'notas'].forEach(function (k) { f[k].value = (c && c[k]) || ''; });
     f.tipoPessoa.value = (c && c.tipoPessoa) || 'PJ';
     state.benefEd = window.FRBenef.editor($('c-benef'), (c && c.beneficiarios) || []);
+    if (c && c.operadora && !Array.prototype.some.call(f.operadora.options, function (o) { return o.value === c.operadora; })) {
+      f.operadora.appendChild(el('option', { value: c.operadora, text: c.operadora }));
+    }
     f.operadora.value = (c && c.operadora) || '';
     f.valor.value = c && c.valor ? String(c.valor.toFixed(2)).replace('.', ',') : '';
     f.status.value = (c && c.status) || 'ativo';
