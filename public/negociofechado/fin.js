@@ -302,15 +302,23 @@
       var tr = el('tr', { class: c.status === 'cancelado' ? 'row-cancel' : '' }, [first]);
       ms.forEach(function (mi) {
         var a = amountAt(c, mi), pg = c.pagamentos && c.pagamentos[ymOf(mi)], td = el('td');
-        if (a || (pg && pg.recebido)) {
-          var val = pg && pg.recebido && pg.valor != null ? pg.valor : (a ? a.v : 0);
-          var b = el('button', { type: 'button', class: 'cell' + (pg && pg.recebido ? ' is-paid' : (mi < n0 ? ' is-late' : '')),
-            title: (pg && pg.recebido ? 'Recebido' : (mi < n0 ? 'Não marcado como recebido' : 'Previsto')) + ' · clique para alterar' }, [
-            a ? el('span', { class: 'k k--' + a.kind, text: a.kind === 'p' ? 'P' + a.n : (a.manual ? 'V✎' : 'V') }) : null,
-            el('span', { text: money(val) })
-          ]);
-          b.addEventListener('click', function () { openPay(c, mi, a); });
-          td.appendChild(b);
+        var paid = !!(pg && pg.recebido);
+        var vitMonth = isVitMonth(c, mi);
+        if (a || paid || vitMonth) {
+          var val = paid && pg.valor != null ? pg.valor : (a ? a.v : 0);
+          var wrap = el('span', { class: 'cellw' + (paid ? ' is-paid' : (mi < n0 && (a || paid) ? ' is-late' : '')) });
+          var has = !!(a || paid);
+          var kind = a ? el('span', { class: 'k k--' + a.kind, text: a.kind === 'p' ? 'P' + a.n : (a.manual ? 'V✎' : 'V') }) : null;
+          var amt = el('button', { type: 'button', class: 'cell' + (has ? '' : ' cell--empty'), title: vitMonth ? (has ? 'Clique para editar o vitalício a partir deste mês' : 'Clique para lançar um vitalício a partir deste mês') : 'Clique para registrar o recebimento' }, [kind, el('span', { class: has ? '' : 'dash', text: has ? money(val) : '—' })]);
+          if (vitMonth) amt.addEventListener('click', function () { inlineVit(c, mi, td, val, paid); });
+          else amt.addEventListener('click', function () { openPay(c, mi, a); });
+          wrap.appendChild(amt);
+          if (a || paid) {
+            var chk = el('button', { type: 'button', class: 'chk' + (paid ? ' is-on' : ''), title: paid ? 'Recebido · clique para desmarcar' : 'Marcar como recebido', 'aria-label': paid ? 'Desmarcar recebido' : 'Marcar como recebido', text: paid ? '✓' : '○' });
+            chk.addEventListener('click', function () { quickPay(c, mi, !paid, paid ? null : val); });
+            wrap.appendChild(chk);
+          }
+          td.appendChild(wrap);
         } else td.appendChild(el('span', { class: 'dash', text: '—' }));
         tr.appendChild(td);
       });
@@ -321,6 +329,51 @@
     var f2 = el('tr', null, [el('td', { class: 'c-name', text: 'Total recebido' })]);
     totals.forEach(function (x) { f1.appendChild(el('td', { text: money(x.t) })); f2.appendChild(el('td', { text: x.rec ? money(x.rec) : '—' })); });
     t.appendChild(el('tfoot', null, [f1, f2]));
+  }
+
+  /* ---------- edição na célula ---------- */
+  /** Mês está na fase de vitalício (depois das parcelas, contrato ativo naquele mês)? */
+  function isVitMonth(c, mi) {
+    if (!c.vigencia) return false;
+    var r = ruleOf(c), parc = r ? r.parcelas.length : 0, n = mi - idxOf(c.vigencia);
+    if (n < parc) return false;
+    if (c.status === 'cancelado' && c.canceladoEm && mi >= idxOf(c.canceladoEm)) return false;
+    return true;
+  }
+  function patchContract(c, body, msg) {
+    return api('/contratos/' + c.id, { method: 'PATCH', body: JSON.stringify(body) }).then(function (r) {
+      if (r._status === 401) { showLogin(); return; }
+      if (!r.ok) { toast(r.error || 'Erro ao salvar'); render(); return; }
+      Object.assign(c, r.contrato); render(); if (msg) toast(msg);
+    });
+  }
+  function quickPay(c, mi, recebido, valor) {
+    patchContract(c, { pagamento: { mes: ymOf(mi), recebido: recebido, valor: valor != null ? valor : '' } }, recebido ? 'Marcado como recebido' : 'Recebimento desmarcado');
+  }
+  /** Edita o vitalício na própria célula: vale deste mês em diante; meses anteriores não mudam */
+  function inlineVit(c, mi, td, current, paid) {
+    td.textContent = '';
+    var inp = el('input', { class: 'cell-input', inputmode: 'decimal', value: current ? Number(current).toFixed(2).replace('.', ',') : '', 'aria-label': 'Vitalício de ' + labelOf(mi) });
+    td.appendChild(inp);
+    td.appendChild(el('small', { class: 'cell-hint', text: 'Enter salva · vale de ' + labelOf(mi) + ' em diante' }));
+    inp.focus(); inp.select();
+    var done = false;
+    function finish(save) {
+      if (done) return; done = true;
+      var v = parseBRL(inp.value);
+      if (!save || !inp.value.trim() || Math.abs(v - (current || 0)) < 0.005) { render(); return; }
+      var ym = ymOf(mi);
+      var adj = (c.vitalicioAjustes || []).filter(function (x) { return x.desde !== ym; });
+      adj.push({ desde: ym, valor: v });
+      var body = { vitalicioAjustes: adj };
+      if (paid) body.pagamento = { mes: ym, recebido: true, valor: v };
+      patchContract(c, body, 'Vitalício atualizado para ' + money(v) + ' a partir de ' + labelOf(mi));
+    }
+    inp.addEventListener('keydown', function (e) {
+      if (e.key === 'Enter') { e.preventDefault(); finish(true); }
+      else if (e.key === 'Escape') { e.preventDefault(); finish(false); }
+    });
+    inp.addEventListener('blur', function () { finish(true); });
   }
 
   /* ---------- recebimento ---------- */
