@@ -70,6 +70,14 @@
     if (!ruleOf(c) && !hasAdj) return 'sem regra de comissão para ' + c.operadora + ' ' + c.tipoPessoa;
     return '';
   }
+  /** Nº efetivo de parcelas: as da regra + parcelas extras (P4, P5…) lançadas em sequência logo depois */
+  function effParc(c) {
+    var r = ruleOf(c), k = r ? r.parcelas.length : 0;
+    if (!c.vigencia) return k;
+    var v0 = idxOf(c.vigencia), pv = c.parcelasValores || {};
+    while (pv[ymOf(v0 + k)] != null) k++;
+    return k;
+  }
   /** Valor do vitalício num mês: última alteração manual até o mês, senão regra (valor × %) */
   function vitAt(c, mi) {
     var adj = null;
@@ -81,13 +89,19 @@
   }
   /** Comissão prevista de um contrato num mês: {v, kind:'p'|'v', n, manual} ou null */
   function amountAt(c, mi) {
-    var r = ruleOf(c), hasAdj = (c.vitalicioAjustes || []).length > 0;
-    if ((!r && !hasAdj) || !c.vigencia) return null;
+    var r = ruleOf(c), hasAdj = (c.vitalicioAjustes || []).length > 0, hasPv = c.parcelasValores && Object.keys(c.parcelasValores).length > 0;
+    if ((!r && !hasAdj && !hasPv) || !c.vigencia) return null;
     var parc = r ? r.parcelas : [];
     var n = mi - idxOf(c.vigencia);
     if (n < 0) return null;
     if (c.status === 'cancelado' && c.canceladoEm && mi >= idxOf(c.canceladoEm)) return null;
-    if (n < parc.length) return c.valor ? { v: c.valor * parc[n] / 100, kind: 'p', n: n + 1 } : null;
+    var ep = effParc(c);
+    if (n >= parc.length && n < ep) return { v: c.parcelasValores[ymOf(mi)], kind: 'p', n: n + 1, manual: true, extra: true, regra: null };
+    if (n < parc.length) {
+      var ov = c.parcelasValores && c.parcelasValores[ymOf(mi)];
+      if (ov != null) return { v: ov, kind: 'p', n: n + 1, manual: true, regra: c.valor ? c.valor * parc[n] / 100 : null };
+      return c.valor ? { v: c.valor * parc[n] / 100, kind: 'p', n: n + 1 } : null;
+    }
     var vt = vitAt(c, mi);
     return vt && vt.v > 0 ? { v: vt.v, kind: 'v', manual: vt.manual } : null;
   }
@@ -308,9 +322,10 @@
           var val = paid && pg.valor != null ? pg.valor : (a ? a.v : 0);
           var wrap = el('span', { class: 'cellw' + (paid ? ' is-paid' : (mi < n0 && (a || paid) ? ' is-late' : '')) });
           var has = !!(a || paid);
-          var kind = a ? el('span', { class: 'k k--' + a.kind, text: a.kind === 'p' ? 'P' + a.n : (a.manual ? 'V✎' : 'V') }) : null;
-          var amt = el('button', { type: 'button', class: 'cell' + (has ? '' : ' cell--empty'), title: vitMonth ? (has ? 'Clique para editar o vitalício a partir deste mês' : 'Clique para lançar um vitalício a partir deste mês') : 'Clique para registrar o recebimento' }, [kind, el('span', { class: has ? '' : 'dash', text: has ? money(val) : '—' })]);
+          var kind = a ? el('span', { class: 'k k--' + a.kind, text: (a.kind === 'p' ? 'P' + a.n : 'V') + (a.manual ? '✎' : '') }) : null;
+          var amt = el('button', { type: 'button', class: 'cell' + (has ? '' : ' cell--empty'), title: vitMonth ? (has ? 'Clique para editar o vitalício a partir deste mês' : 'Clique para lançar um vitalício a partir deste mês') : (a && a.kind === 'p' ? 'Clique para editar o valor desta parcela (só este mês)' + (a.manual && a.regra != null ? ' · pela regra: ' + money(a.regra) : '') : 'Clique para registrar o recebimento') }, [kind, el('span', { class: has ? '' : 'dash', text: has ? money(val) : '—' })]);
           if (vitMonth) amt.addEventListener('click', function () { inlineVit(c, mi, td, val, paid); });
+          else if (a && a.kind === 'p') amt.addEventListener('click', function () { inlineParc(c, mi, td, val, paid, a); });
           else amt.addEventListener('click', function () { openPay(c, mi, a); });
           wrap.appendChild(amt);
           if (a || paid) {
@@ -335,7 +350,7 @@
   /** Mês está na fase de vitalício (depois das parcelas, contrato ativo naquele mês)? */
   function isVitMonth(c, mi) {
     if (!c.vigencia) return false;
-    var r = ruleOf(c), parc = r ? r.parcelas.length : 0, n = mi - idxOf(c.vigencia);
+    var parc = effParc(c), n = mi - idxOf(c.vigencia);
     if (n < parc) return false;
     if (c.status === 'cancelado' && c.canceladoEm && mi >= idxOf(c.canceladoEm)) return false;
     return true;
@@ -350,16 +365,60 @@
   function quickPay(c, mi, recebido, valor) {
     patchContract(c, { pagamento: { mes: ymOf(mi), recebido: recebido, valor: valor != null ? valor : '' } }, recebido ? 'Marcado como recebido' : 'Recebimento desmarcado');
   }
+  /** Edita uma parcela na própria célula: vale só para este mês (promoções, ajustes da operadora). Vazio = volta para a regra */
+  function inlineParc(c, mi, td, current, paid, a) {
+    td.textContent = '';
+    var inp = el('input', { class: 'cell-input', inputmode: 'decimal', value: current ? Number(current).toFixed(2).replace('.', ',') : '', 'aria-label': 'Parcela ' + a.n + ' de ' + labelOf(mi) });
+    td.appendChild(inp);
+    td.appendChild(el('small', { class: 'cell-hint', text: 'Enter salva · só ' + labelOf(mi) + (a.extra ? ' · vazio = remove a P' + a.n : (a.manual ? ' · vazio = regra' : '')) }));
+    inp.focus(); inp.select();
+    var done = false;
+    function finish(save) {
+      if (done) return; done = true;
+      var raw = inp.value.trim();
+      if (!save) { render(); return; }
+      if (!raw) {
+        if (!a.manual) { render(); return; }
+        patchContract(c, { parcelaValor: { mes: ymOf(mi), valor: null } }, a.extra ? 'P' + a.n + ' removida' : 'Parcela ' + a.n + ' voltou ao valor da regra');
+        return;
+      }
+      var v = parseBRL(raw);
+      if (Math.abs(v - (current || 0)) < 0.005) { render(); return; }
+      var body = { parcelaValor: { mes: ymOf(mi), valor: v } };
+      if (paid) body.pagamento = { mes: ymOf(mi), recebido: true, valor: v };
+      patchContract(c, body, 'Parcela ' + a.n + ' de ' + labelOf(mi) + ' alterada para ' + money(v));
+    }
+    inp.addEventListener('keydown', function (e) {
+      if (e.key === 'Enter') { e.preventDefault(); finish(true); }
+      else if (e.key === 'Escape') { e.preventDefault(); finish(false); }
+    });
+    inp.addEventListener('blur', function () { finish(true); });
+  }
+
   /** Edita o vitalício na própria célula: vale deste mês em diante; meses anteriores não mudam */
   function inlineVit(c, mi, td, current, paid) {
     td.textContent = '';
     var inp = el('input', { class: 'cell-input', inputmode: 'decimal', value: current ? Number(current).toFixed(2).replace('.', ',') : '', 'aria-label': 'Vitalício de ' + labelOf(mi) });
     td.appendChild(inp);
     td.appendChild(el('small', { class: 'cell-hint', text: 'Enter salva · vale de ' + labelOf(mi) + ' em diante' }));
+    var asParc = null, pn = effParc(c) + 1;
+    if (c.vigencia && mi - idxOf(c.vigencia) === pn - 1) {
+      asParc = el('input', { type: 'checkbox', 'aria-label': 'Lançar como parcela P' + pn });
+      var lb = el('label', { class: 'cell-opt' }, [asParc, ' Lançar como P' + pn + ' (só este mês)']);
+      lb.addEventListener('mousedown', function (e) { e.preventDefault(); });
+      lb.addEventListener('click', function (e) { if (e.target !== asParc) { e.preventDefault(); asParc.checked = !asParc.checked; } setTimeout(function () { inp.focus(); }, 0); });
+      td.appendChild(lb);
+    }
     inp.focus(); inp.select();
     var done = false;
     function finish(save) {
       if (done) return; done = true;
+      if (save && asParc && asParc.checked && inp.value.trim()) {
+        var pvv = parseBRL(inp.value), pb = { parcelaValor: { mes: ymOf(mi), valor: pvv } };
+        if (paid) pb.pagamento = { mes: ymOf(mi), recebido: true, valor: pvv };
+        patchContract(c, pb, 'P' + pn + ' lançada em ' + labelOf(mi) + ': ' + money(pvv));
+        return;
+      }
       var v = parseBRL(inp.value);
       if (!save || !inp.value.trim() || Math.abs(v - (current || 0)) < 0.005) { render(); return; }
       var ym = ymOf(mi);
@@ -451,7 +510,7 @@
     var s0 = Math.max(start, nowIdx() - 1);
     for (var k = 0; k < 8; k++) {
       var mi = s0 + k, i = mi - start, a = amountAt(tmp, mi);
-      ol.appendChild(el('li', { text: labelOf(mi) + ': ' + (a ? money(a.v) + (a.kind === 'p' ? ' (' + pct(r.parcelas[i]) + '%)' : (a.manual ? ' (vitalício editado)' : ' (vitalício ' + pct(r.vitalicio) + '%)')) : '—') }));
+      ol.appendChild(el('li', { text: labelOf(mi) + ': ' + (a ? money(a.v) + (a.kind === 'p' ? (a.manual ? (a.extra ? ' (P' + a.n + ' extra)' : ' (parcela editada)') : ' (' + pct(r.parcelas[i]) + '%)') : (a.manual ? ' (vitalício editado)' : ' (vitalício ' + pct(r.vitalicio) + '%)')) : '—') }));
     }
     box.appendChild(el('strong', { text: 'Previsão de recebimento' }));
     box.appendChild(ol);

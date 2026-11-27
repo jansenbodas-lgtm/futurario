@@ -104,3 +104,4 @@ code { background: var(--bg); padding: 1px 5px; border-radius: 4px; }
 .cell--empty { color: #C2CAD6; }
 .cell--empty:hover .dash { display: none; }
 .cell--empty:hover::after { content: "+ lançar"; color: var(--accent-ink); font-weight: 700; font-size: .78rem; }
+.cell-opt { display: flex; align-items: center; gap: 4px; font-size: .72rem; color: var(--accent-ink); font-weight: 700; margin-top: 3px; cursor: pointer; white-space: nowrap; }

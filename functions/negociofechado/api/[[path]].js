@@ -23,6 +23,12 @@ function applyContractPatch(c, body) {
     c.aniversario = v;
   }
   if (body.beneficiarios !== undefined) c.beneficiarios = sanitizeBenef(body.beneficiarios);
+  if (body.parcelaValor && MONTH_RE.test(body.parcelaValor.mes || '')) {
+    if (!c.parcelasValores || typeof c.parcelasValores !== 'object') c.parcelasValores = {};
+    const v = body.parcelaValor.valor;
+    if (v === null || v === '' || v === undefined) delete c.parcelasValores[body.parcelaValor.mes];
+    else c.parcelasValores[body.parcelaValor.mes] = parseBRL(v);
+  }
   if (body.vitalicioAjustes !== undefined) {
     const list = Array.isArray(body.vitalicioAjustes) ? body.vitalicioAjustes : [];
     const byMonth = {};
